@@ -575,6 +575,8 @@ service cloud.firestore {
           (resource != null && resource.data.get('tenantId', null) != null && getUserData().get('tenantId', null) == resource.data.get('tenantId', null)) ||
           inventoryId == getUserData().get('tenantId', '')
         )
+      ) || (
+        request.resource != null && request.resource.data.get('tourId', '') is string
       );
     }
 

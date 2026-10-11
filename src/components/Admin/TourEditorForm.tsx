@@ -912,17 +912,37 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                     </div>
                   </div>
 
-                  {/* Complex Packages Section */}
+                   {/* Complex Packages Section */}
                   <div className="space-y-8">
-                     <div className="flex items-center justify-between">
+                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <h3 className="text-2xl font-black text-gray-900 tracking-tight">Tiered Pricing Packages</h3>
-                        <button 
-                          type="button" 
-                          onClick={() => addArrayItem('packages', { name: '', details: '', description: '', inclusions: [], exclusions: [], meetingPoint: '', meetingPointType: 'Meeting Point', pickupAreas: '', transportIds: formData.transportIds || [], tiers: [{ minParticipants: 1, maxParticipants: 1, adultPrice: 0, childPrice: 0 }] })} 
-                          className="flex items-center gap-2 rounded-[10px] bg-primary px-6 py-2 text-sm font-bold text-white shadow-lg shadow-orange-100 hover:bg-orange-700 transition-all"
-                        >
-                          <PlusCircle className="h-4 w-4" /> New Package
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedPackages(formData.packages?.map((_, idx) => idx) || [])}
+                            className="text-xs font-bold text-gray-500 hover:text-primary transition-colors cursor-pointer"
+                          >
+                            Expand All
+                          </button>
+                          <span className="text-gray-300">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedPackages([])}
+                            className="text-xs font-bold text-gray-500 hover:text-primary transition-colors cursor-pointer"
+                          >
+                            Collapse All
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              addArrayItem('packages', { name: '', details: '', description: '', inclusions: [], exclusions: [], meetingPoint: '', meetingPointType: 'Meeting Point', pickupAreas: '', transportIds: formData.transportIds || [], tiers: [{ minParticipants: 1, maxParticipants: 1, adultPrice: 0, childPrice: 0 }] });
+                              setExpandedPackages(prev => [...prev, (formData.packages?.length || 0)]);
+                            }} 
+                            className="flex items-center gap-2 rounded-[10px] bg-primary px-6 py-2 text-sm font-bold text-white shadow-lg shadow-orange-100 hover:bg-orange-700 transition-all cursor-pointer"
+                          >
+                            <PlusCircle className="h-4 w-4" /> New Package
+                          </button>
+                        </div>
                     </div>
 
                     <div className="space-y-12">
