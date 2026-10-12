@@ -14,6 +14,7 @@ export default function TourInfo({ tour }: TourInfoProps) {
   const { settings } = useSettings();
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 0: true });
   const [activeDayFilter, setActiveDayFilter] = useState<number | 'all'>('all');
+  const [expandedPackages, setExpandedPackages] = useState<Record<number, boolean>>({});
 
   const toggleDay = (index: number) => {
     setExpandedDays(prev => ({
@@ -33,6 +34,30 @@ export default function TourInfo({ tour }: TourInfoProps) {
 
   const collapseAllDays = () => {
     setExpandedDays({});
+  };
+
+  const togglePackage = (idx: number) => {
+    setExpandedPackages(prev => ({
+      ...prev,
+      [idx]: prev[idx] === undefined ? false : !prev[idx]
+    }));
+  };
+
+  const expandAllPackages = () => {
+    if (!tour.packages) return;
+    const allExp: Record<number, boolean> = {};
+    tour.packages.forEach((_, idx) => {
+      allExp[idx] = true;
+    });
+    setExpandedPackages(allExp);
+  };
+
+  const collapseAllPackages = () => {
+    const allCol: Record<number, boolean> = {};
+    tour.packages?.forEach((_, idx) => {
+      allCol[idx] = false;
+    });
+    setExpandedPackages(allCol);
   };
 
   const handleWhatsAppContact = () => {
@@ -79,7 +104,7 @@ export default function TourInfo({ tour }: TourInfoProps) {
       {/* Tour Packages & Options */}
       {tour.packages && tour.packages.length > 0 && (
         <section id="packages" className="scroll-mt-[116px] space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-lg bg-orange-100/80 text-primary">
@@ -91,9 +116,25 @@ export default function TourInfo({ tour }: TourInfoProps) {
                 Choose the best package option tailored for your travel party
               </p>
             </div>
-            <span className="text-xs font-bold text-primary bg-orange-50 px-3 py-1 rounded-full border border-orange-100 self-start sm:self-auto">
-              {tour.packages.length} {tour.packages.length === 1 ? 'Package' : 'Packages'} Available
-            </span>
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={expandAllPackages}
+                className="text-xs font-bold text-primary bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-xl border border-orange-200 transition-all cursor-pointer"
+              >
+                Expand All
+              </button>
+              <button
+                type="button"
+                onClick={collapseAllPackages}
+                className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl border border-gray-200 transition-all cursor-pointer"
+              >
+                Collapse All
+              </button>
+              <span className="text-xs font-bold text-primary bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100">
+                {tour.packages.length} {tour.packages.length === 1 ? 'Package' : 'Packages'} Available
+              </span>
+            </div>
           </div>
 
           <div className="grid gap-6">
@@ -103,6 +144,7 @@ export default function TourInfo({ tour }: TourInfoProps) {
               const pkgInclusions = (pkg.inclusions || []).filter(item => item && item.trim() !== '');
               const pkgExclusions = (pkg.exclusions || []).filter(item => item && item.trim() !== '');
               const packageDesc = pkg.description || pkg.details;
+              const isExpanded = expandedPackages[idx] ?? true;
 
               return (
                 <div 
@@ -136,81 +178,106 @@ export default function TourInfo({ tour }: TourInfoProps) {
                       )}
                     </div>
 
-                    {startingRate !== undefined && startingRate > 0 && (
-                      <div className="sm:text-right shrink-0 bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-xl">
-                        <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">Starting from</div>
-                        <div className="flex sm:justify-end items-baseline gap-1">
-                          <span className="text-2xl font-black text-gray-900 font-display">
-                            <FormattedPrice amount={startingRate} />
-                          </span>
-                          <span className="text-xs text-gray-500 font-medium">/ person</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Multi-line / Paragraph Package Description */}
-                  {packageDesc && (
-                    <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-100">
-                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
-                        {packageDesc}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Group Pricing Tiers Table/Badges if applicable */}
-                  {hasTiers && pkg.tiers.length > 1 && (
-                    <div className="space-y-2 pt-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
-                        Tiered Group Rates
-                      </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                        {pkg.tiers.map((tier, tIdx) => (
-                          <div key={tIdx} className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-xs">
-                            <div className="text-gray-500 font-semibold text-[11px]">
-                              {tier.maxParticipants >= 99
-                                ? `${tier.minParticipants}+ pax`
-                                : tier.minParticipants === tier.maxParticipants
-                                  ? `${tier.minParticipants} pax`
-                                  : `${tier.minParticipants}–${tier.maxParticipants} pax`}
-                            </div>
-                            <div className="font-bold text-gray-900 mt-0.5">
-                              <FormattedPrice amount={tier.adultPrice} />
-                              <span className="text-[10px] text-gray-400 font-normal"> / pax</span>
-                            </div>
+                    <div className="flex flex-col sm:items-end gap-3 shrink-0">
+                      {startingRate !== undefined && startingRate > 0 && (
+                        <div className="sm:text-right bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-xl">
+                          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">Starting from</div>
+                          <div className="flex sm:justify-end items-baseline gap-1">
+                            <span className="text-2xl font-black text-gray-900 font-display">
+                              <FormattedPrice amount={startingRate} />
+                            </span>
+                            <span className="text-xs text-gray-500 font-medium">/ person</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Specific Inclusions / Exclusions for this package */}
-                  {(pkgInclusions.length > 0 || pkgExclusions.length > 0) && (
-                    <div className="grid sm:grid-cols-2 gap-3 pt-1 text-xs">
-                      {pkgInclusions.length > 0 && (
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-green-700">Package Inclusions:</span>
-                          <ul className="space-y-1">
-                            {pkgInclusions.map((inc, iIdx) => (
-                              <li key={iIdx} className="flex items-start gap-1.5 text-gray-600">
-                                <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
-                                <span>{inc}</span>
-                              </li>
-                            ))}
-                          </ul>
                         </div>
                       )}
-                      {pkgExclusions.length > 0 && (
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Not Included:</span>
-                          <ul className="space-y-1">
-                            {pkgExclusions.map((exc, eIdx) => (
-                              <li key={eIdx} className="flex items-start gap-1.5 text-gray-600">
-                                <X className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
-                                <span>{exc}</span>
-                              </li>
+                      
+                      <button
+                        type="button"
+                        onClick={() => togglePackage(idx)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-primary bg-orange-50 hover:bg-orange-100 px-3.5 py-1.5 rounded-xl border border-orange-200 transition-all cursor-pointer self-start sm:self-auto"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <span>Collapse Details</span>
+                            <ChevronUp className="h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            <span>Expand Details</span>
+                            <ChevronDown className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Collapsible Content */}
+                  {isExpanded && (
+                    <div className="space-y-4 pt-2 border-t border-gray-100 animate-fade-in">
+                      {/* Multi-line / Paragraph Package Description */}
+                      {packageDesc && (
+                        <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-100">
+                          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                            {packageDesc}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Group Pricing Tiers Table/Badges if applicable */}
+                      {hasTiers && pkg.tiers.length > 1 && (
+                        <div className="space-y-2 pt-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
+                            Tiered Group Rates
+                          </span>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                            {pkg.tiers.map((tier, tIdx) => (
+                              <div key={tIdx} className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-xs">
+                                <div className="text-gray-500 font-semibold text-[11px]">
+                                  {tier.maxParticipants >= 99
+                                    ? `${tier.minParticipants}+ pax`
+                                    : tier.minParticipants === tier.maxParticipants
+                                      ? `${tier.minParticipants} pax`
+                                      : `${tier.minParticipants}–${tier.maxParticipants} pax`}
+                                </div>
+                                <div className="font-bold text-gray-900 mt-0.5">
+                                  <FormattedPrice amount={tier.adultPrice} />
+                                  <span className="text-[10px] text-gray-400 font-normal"> / pax</span>
+                                </div>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Specific Inclusions / Exclusions for this package */}
+                      {(pkgInclusions.length > 0 || pkgExclusions.length > 0) && (
+                        <div className="grid sm:grid-cols-2 gap-3 pt-1 text-xs">
+                          {pkgInclusions.length > 0 && (
+                            <div className="space-y-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-green-700">Package Inclusions:</span>
+                              <ul className="space-y-1">
+                                {pkgInclusions.map((inc, iIdx) => (
+                                  <li key={iIdx} className="flex items-start gap-1.5 text-gray-600">
+                                    <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                                    <span>{inc}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {pkgExclusions.length > 0 && (
+                            <div className="space-y-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Not Included:</span>
+                              <ul className="space-y-1">
+                                {pkgExclusions.map((exc, eIdx) => (
+                                  <li key={eIdx} className="flex items-start gap-1.5 text-gray-600">
+                                    <X className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
+                                    <span>{exc}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
