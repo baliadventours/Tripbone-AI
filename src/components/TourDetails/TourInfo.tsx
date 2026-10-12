@@ -120,18 +120,18 @@ export default function TourInfo({ tour }: TourInfoProps) {
               <button
                 type="button"
                 onClick={expandAllPackages}
-                className="text-xs font-bold text-primary bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-xl border border-orange-200 transition-all cursor-pointer"
+                className="text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 transition-all cursor-pointer shadow-xs"
               >
                 Expand All
               </button>
               <button
                 type="button"
                 onClick={collapseAllPackages}
-                className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl border border-gray-200 transition-all cursor-pointer"
+                className="text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 transition-all cursor-pointer shadow-xs"
               >
                 Collapse All
               </button>
-              <span className="text-xs font-bold text-primary bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100">
+              <span className="text-xs font-bold text-gray-700 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
                 {tour.packages.length} {tour.packages.length === 1 ? 'Package' : 'Packages'} Available
               </span>
             </div>
@@ -170,7 +170,7 @@ export default function TourInfo({ tour }: TourInfoProps) {
                             </span>
                           )}
                           {pkg.pickupAreas && (
-                            <span className="flex items-center gap-1 bg-orange-50/60 px-2.5 py-0.5 rounded-md border border-orange-100 text-primary font-medium">
+                            <span className="flex items-center gap-1 bg-gray-50 px-2.5 py-0.5 rounded-md border border-gray-200 text-gray-700 font-medium">
                               Pickup: {pkg.pickupAreas}
                             </span>
                           )}
@@ -194,7 +194,7 @@ export default function TourInfo({ tour }: TourInfoProps) {
                       <button
                         type="button"
                         onClick={() => togglePackage(idx)}
-                        className="flex items-center gap-1.5 text-xs font-bold text-primary bg-orange-50 hover:bg-orange-100 px-3.5 py-1.5 rounded-xl border border-orange-200 transition-all cursor-pointer self-start sm:self-auto"
+                        className="flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 px-3.5 py-1.5 rounded-xl border border-gray-200 transition-all cursor-pointer self-start sm:self-auto shadow-xs"
                       >
                         {isExpanded ? (
                           <>
