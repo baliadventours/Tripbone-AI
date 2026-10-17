@@ -638,6 +638,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
         'addons': 'tours-group',
         'transports': 'tours-group',
         'urgency-points': 'tours-group',
+        'car-fleet': 'car-rental-group',
         'car-rental-bookings': 'car-rental-group',
         'car-rental-automations': 'car-rental-group',
         'car-rental-settings': 'car-rental-group',
@@ -1520,6 +1521,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
         icon: Car,
         hidden: isSupplier || isAgent || (isStaff && !(staffPerms.carRental ?? true)),
         children: [
+          { id: 'car-fleet', label: 'Car Management' },
           { id: 'car-rental-bookings', label: 'Rental Booking' },
           { id: 'car-rental-automations', label: 'Booking Automation' },
           { id: 'car-rental-settings', label: 'Setting & Zones' },
@@ -1667,10 +1669,10 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
       'addons': 'Tour Add-ons',
       'transports': 'Transport Options',
       'urgency-points': 'Urgency Features',
+      'car-fleet': 'Car Management',
       'car-rental-bookings': 'Rental Booking',
       'car-rental-automations': 'Booking Automation',
       'car-rental-settings': 'Setting & Zones',
-      'car-fleet': 'Rental Fleet & Pricing',
       'waivers': 'Digital Waivers',
       'channel-manager': 'Channel Manager (OTAs)',
       'invoices': 'Invoice & Billing',
@@ -6419,6 +6421,67 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
       {/* Digital Liability Waivers & Safety Kiosk */}
       {activeMenu === 'waivers' && (
         <WaiverManager />
+      )}
+
+      {/* Car Rental Unified Header & Tab Navigation */}
+      {['car-fleet', 'car-rental', 'car-rental-bookings', 'car-rental-automations', 'car-rental-settings'].includes(activeMenu) && (
+        <div className="bg-white rounded-2xl p-2 border border-gray-200 shadow-xs flex flex-wrap items-center gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => setActiveMenu('car-fleet')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
+              (activeMenu === 'car-fleet' || activeMenu === 'car-rental')
+                ? "bg-primary text-white shadow-xs"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            )}
+          >
+            <Car className="w-4 h-4" />
+            <span>Car Management</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMenu('car-rental-bookings')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
+              activeMenu === 'car-rental-bookings'
+                ? "bg-primary text-white shadow-xs"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            )}
+          >
+            <CalendarIcon className="w-4 h-4" />
+            <span>Rental Bookings</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMenu('car-rental-automations')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
+              activeMenu === 'car-rental-automations'
+                ? "bg-primary text-white shadow-xs"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            )}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Booking Automation</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMenu('car-rental-settings')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
+              activeMenu === 'car-rental-settings'
+                ? "bg-primary text-white shadow-xs"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            )}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Setting & Zones</span>
+          </button>
+        </div>
       )}
 
       {/* Car Rental Booking Management */}

@@ -1,32 +1,27 @@
-# 🎙️ Tripbone 3-Minute Video Pitch: Voiceover Narration Only
-*Read or paste directly into ElevenLabs, Google Cloud Text-to-Speech, or your microphone recording setup.*
-*Total Word Count: ~410 words (Exactly 2 minutes 55 seconds at a comfortable, natural speaking pace of 140 WPM).*
+# 🎙️ Tripbone 3-Minute Video Pitch: Clean Voiceover Script
+**Format:** Plain spoken voiceover narration (Zero marketing jargon, feature-first)  
+**Total Word Count:** ~390 words  
+**Duration:** ~2 minutes 45 seconds at a clear, natural speaking pace (140 WPM)  
 
 ---
 
-### [0:00 - 0:20] Hook & Problem
-"Every year, independent tour operators lose thousands of dollars in OTA commissions and countless hours in manual WhatsApp chats. What if an entire tour enterprise—from customer discovery to direct payment and dispatch—could be automated with AI? Meet Tripbone: the AI-native commerce engine built specifically for tour and activity operators."
+### [0:00 – 0:20] Introduction
+"Most independent tour operators still take bookings manually through WhatsApp and spreadsheets, or lose 20 to 25% of every sale to OTAs like Viator. Tripbone is an all-in-one direct booking and operating platform built on Google Cloud. Here is how it works."
 
-### [0:20 - 0:42] 1. AI Tour Builder
-"First, the AI Tour Builder. Instead of spending hours writing copy, operators simply type a raw idea. Powered by Google Gemini, Tripbone instantly structures sensory descriptions, timing, hotel pick-up logistics, inclusions, and FAQs—publishing live, bookable tours in seconds."
+### [0:20 – 0:45] AI Tour Builder & OTA Importer
+"First, creating tours. Instead of writing copy manually, operators enter a short prompt. Powered by Google Gemini, Tripbone writes the description, creates the schedule, and adds inclusions and FAQs in two seconds. If you already have tours on Viator or GetYourGuide, paste the link into the AI Importer to import your entire catalog with zero retyping."
 
-### [0:42 - 1:07] 2. AI Travel Planner
-"Next, the AI Travel Planner. Travelers don't just get static advice—they receive a personalized day-by-day itinerary tailored to their budget and pace. Best of all, the AI dynamically cross-references the operator’s catalog, seamlessly embedding real, bookable tours directly into the guest’s custom schedule."
+### [0:45 – 1:15] AI Trip Planner with Embedded Tours
+"For travelers, Tripbone includes an AI Trip Planner. A guest enters their travel dates, budget, and interests. Gemini generates a personalized day-by-day itinerary with Google Maps routing. Directly inside the plan, the AI recommends your real tours with a direct 'Book Now' button, allowing travelers to reserve instantly."
 
-### [1:07 - 1:27] 3. AI Customer Service Chatbot
-"Third, our 24/7 AI Customer Service Chatbot. It acts as an always-on digital concierge, answering complex traveler questions about pick-up zones, group sizes, and equipment—turning late-night overseas inquiries into confirmed direct bookings without manual staff intervention."
+### [1:15 – 1:40] 24/7 AI Sales Chatbot & Group Pricing
+"For customer inquiries, our 24/7 AI Chatbot answers questions about hotel pickup zones, inclusions, and equipment using your tour information. It handles late-night international questions and sends direct booking links. At checkout, our dynamic pricing engine automatically applies tiered group discounts as group size increases."
 
-### [1:27 - 1:47] 4. AI Tour Importer from OTA
-"Migrating existing tours is effortless with our AI Tour Importer. Operators can paste messy text or listings from third-party OTAs, and Tripbone automatically normalizes, formats, and publishes the catalog into their own direct-booking engine—with zero re-typing."
+### [1:40 – 2:05] AI Email Booking Extractor & QR Vouchers
+"For partner bookings from hotels or travel agents, paste any raw inquiry email into the AI Email Extractor. Gemini extracts the guest name, party size, date, and tour name automatically. It creates the booking record and generates a digital voucher with a scannable QR check-in code for drivers and guides."
 
-### [1:47 - 2:07] 5. AI Email Booking Extractor
-"For offline and partner bookings, our AI Email Extractor eliminates human error. Simply paste any raw inquiry email. Tripbone extracts the guest name, guest count, dates, and amounts, auto-matches the tour, and issues an instant digital voucher and driver ticket."
+### [2:05 – 2:25] Universal Payment Gateways (BYOPG)
+"Tripbone uses a Bring-Your-Own-Payment-Gateway model. Operators connect their own Stripe, PayPal, or Midtrans QRIS accounts. All customer payments go directly to the operator's bank account, with zero percent platform commission taken by Tripbone."
 
-### [2:07 - 2:27] 6. AI Proposal Builder
-"For custom VIP groups and multi-day packages, the AI Proposal Builder creates bespoke itineraries in seconds. It calculates operator margins, formats luxury presentation decks, and generates shareable PDF quotes that close high-ticket bookings faster."
-
-### [2:27 - 2:45] 7. AI Blog Writer & SEO Generator
-"To drive organic direct traffic, our AI Blog Writer crafts long-form, SEO-optimized travel guides and local tips. It automatically includes meta descriptions and search keywords, helping operators rank on Google and attract commission-free bookings."
-
-### [2:45 - 3:00] And Much More & CTA
-"And much more: from Google Search Grounded search, to automated review syncing, and universal direct payments via Stripe and QRIS. Tripbone puts the full power of AI into the hands of tour operators worldwide. Start your free trial today at Tripbone.com and keep 100% of what you earn."
+### [2:25 – 2:55] Google Cloud Architecture & Conclusion
+"Tripbone is built entirely on Google Cloud. We use Google Cloud Run for containerized backend scaling, Firebase Firestore for real-time multi-tenant data, Google Maps Platform for route mapping, and the Gemini API for generative AI. Tripbone gives independent tour operators the tools to run their entire business online. Thank you."

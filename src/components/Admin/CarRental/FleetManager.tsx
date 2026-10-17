@@ -368,7 +368,7 @@ export default function FleetManager({ openMediaGallery }: FleetManagerProps = {
                           <UserCheck className="w-3 h-3 text-primary" /> With Driver (10h):
                         </span>
                         <span className="text-primary font-black">
-                          ${v.pricing.withDriver.fullDayPrice || 48}
+                          <FormattedPrice amount={v.pricing.withDriver.fullDayPrice || 48} />
                         </span>
                       </div>
                     )}
@@ -379,7 +379,7 @@ export default function FleetManager({ openMediaGallery }: FleetManagerProps = {
                           <Key className="w-3 h-3 text-primary" /> Self-Drive (24h):
                         </span>
                         <span className="text-gray-900 font-black">
-                          ${v.pricing.selfDrive.dailyPrice || 25}
+                          <FormattedPrice amount={v.pricing.selfDrive.dailyPrice || 25} />
                         </span>
                       </div>
                     )}
