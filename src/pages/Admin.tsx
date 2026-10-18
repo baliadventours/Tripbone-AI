@@ -5818,6 +5818,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
                 { id: 'backup', label: 'Disaster Recovery', icon: Database },
                 { id: 'custom-domain', label: 'Custom Domain', icon: Globe },
                 { id: 'tickets', label: 'Support & Ticket', icon: LifeBuoy },
+                { id: 'slides-trigger', label: 'AI Builder Slides', icon: FileText },
                 { id: 'developer-hub', label: 'Developer Hub', icon: Terminal },
                 { id: 'user-settings', label: 'User Setting', icon: User },
                 { id: 'logout-trigger', label: 'Log Out', icon: LogOut }
@@ -5832,6 +5833,8 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
                     onClick={() => {
                       if (item.id === 'logout-trigger') {
                         handleLogout();
+                      } else if (item.id === 'slides-trigger') {
+                        window.open('/slides', '_blank');
                       } else {
                         setSelectedPartner(null);
                         setActiveMenu(item.id as MenuId);

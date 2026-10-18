@@ -85,6 +85,7 @@ const AppSumoRedeem = lazyWithRetry(() => import('./pages/AppSumoRedeem'));
 const GuideView = lazyWithRetry(() => import('./pages/GuideView'));
 const DocsPage = lazyWithRetry(() => import('./pages/DocsPage'));
 const StoryboardPage = lazyWithRetry(() => import('./pages/StoryboardPage'));
+const PresentationSlidesPage = lazyWithRetry(() => import('./pages/PresentationSlidesPage'));
 const VerifyEmail = lazyWithRetry(() => import('./pages/VerifyEmail'));
 
 // Lazy load non-critical components
@@ -255,6 +256,9 @@ function AppContent() {
               <Route path="/docs/:slug" element={<DocsPage />} />
               <Route path="/storyboard" element={<StoryboardPage />} />
               <Route path="/docs/storyboard" element={<StoryboardPage />} />
+              <Route path="/slides" element={<PresentationSlidesPage />} />
+              <Route path="/presentation" element={<PresentationSlidesPage />} />
+              <Route path="/deck" element={<PresentationSlidesPage />} />
               <Route path="/fundamental-setup" element={<Navigate to="/docs/fundamental-setup" replace />} />
               <Route path="/onboarding" element={<Navigate to="/docs/fundamental-setup" replace />} />
               
@@ -506,6 +510,9 @@ function AppContent() {
               <Route path="/docs/:slug" element={<DocsPage />} />
               <Route path="/storyboard" element={<StoryboardPage />} />
               <Route path="/docs/storyboard" element={<StoryboardPage />} />
+              <Route path="/slides" element={<PresentationSlidesPage />} />
+              <Route path="/presentation" element={<PresentationSlidesPage />} />
+              <Route path="/deck" element={<PresentationSlidesPage />} />
               <Route path="/fundamental-setup" element={<Navigate to="/docs/fundamental-setup" replace />} />
               <Route path="/onboarding" element={<Navigate to="/docs/fundamental-setup" replace />} />
               <Route path="/terms" element={<Terms />} />
