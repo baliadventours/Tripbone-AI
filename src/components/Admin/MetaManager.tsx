@@ -187,7 +187,7 @@ import RentalAutomations from './CarRental/RentalAutomations';
 type MenuId = 'dashboard' | 'tours' | 'all-tours' | 'categories' | 'tour-types' | 'locations' | 'addons' | 'transports' | 'coupons' | 'schedule' | 'blog' | 'ai-hub' | 'analytics' | 'analytics-overview' | 'analytics-integration' | 'google-analytics' | 'reviews' | 'communication' | 'payments' | 'settings' | 'users' | 'users-admins' | 'users-suppliers' | 'users-agents' | 'users-customers' | 'payment-settings' | 'pages' | 'urgency-points' | 'timeslots' | 'bookings' | 'channel-manager' | 'import-bookings' | 'guides' | 'overview' | 'inventory' | 'operations' | 'content' | 'settings-group' | 'general-settings' | 'popups-manager' | 'labels' | 'partners' | 'suppliers' | 'agents' | 'company-profile' | 'access-roles' | 'reports' | 'payouts' | 'live-inventory' | 'backup' | 'inquiries' | 'tickets' | 'billing' | 'custom-domain' | 'developer-hub' | 'user-settings' | 'logout-trigger' | 'website-builder' | 'conversion-funnel' | 'invoices' | 'waivers' | 'car-rental' | 'car-rental-bookings' | 'car-fleet' | 'car-rental-automations' | 'car-rental-settings';
 type Tab = 'basic' | 'content' | 'inclusions' | 'pricing' | 'itinerary' | 'accommodations' | 'guides' | 'addOns' | 'transports' | 'faq' | 'info' | 'seo';
 
-const MetaManager = ({ type, items }: { type: 'categories' | 'tour-types' | 'locations' | 'labels', items: (Category | TourType | LocationMeta | TourLabel)[] }) => {
+const MetaManager = ({ type, items, openMediaGallery }: { type: 'categories' | 'tour-types' | 'locations' | 'labels', items: (Category | TourType | LocationMeta | TourLabel)[], openMediaGallery?: (cb: (urls: string[]) => void, multiSelect?: boolean) => void }) => {
   const [newValue, setNewValue] = useState('');
   const [newIcon, setNewIcon] = useState('');
   const [newColor, setNewColor] = useState('#10b981');
@@ -430,6 +430,16 @@ const MetaManager = ({ type, items }: { type: 'categories' | 'tour-types' | 'loc
                       <span>Upload Image</span>
                     </label>
                   </div>
+                  {openMediaGallery && (
+                    <button
+                      type="button"
+                      onClick={() => openMediaGallery((urls) => { if (urls[0]) setNewFeaturedImage(urls[0]); }, false)}
+                      className="flex items-center gap-2 px-4 py-3 bg-orange-50 hover:bg-orange-100 text-primary rounded-[10px] text-xs font-bold transition-colors shrink-0"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      <span>Gallery</span>
+                    </button>
+                  )}
                 </div>
                 {newFeaturedImage && (
                   <div className="mt-3 relative w-32 h-20 rounded-xl overflow-hidden border border-gray-200 group">

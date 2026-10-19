@@ -45,3 +45,5 @@ This file is automatically injected into the AI system prompt on **every turn** 
 ## 4. Analytics, GTM & Bundle Safety
 - **Cross-Tenant Cookie Isolation**: Scope GA/GTM cookies to `window.location.hostname` (`cookie_flags: 'SameSite=None;Secure'`) and reset `window.dataLayer` on tenant context switches.
 - **Vite & esbuild Rule**: Never mix `??` and `||` on the same line without explicit parentheses.
+- **Vercel Node ESM Import Rule**: Because `package.json` uses `"type": "module"`, all relative runtime imports inside `server.ts`, `api/**`, `src/services/**`, and `src/server/**` MUST include the `.js` extension (e.g., `import { tenantLogger } from "../lib/tenantLogger.js"`). Omitting `.js` causes `ERR_MODULE_NOT_FOUND` on Vercel Serverless Functions.
+

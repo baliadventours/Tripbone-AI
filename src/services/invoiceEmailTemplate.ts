@@ -1,7 +1,7 @@
 /**
  * Constructs an official HTML email document for tenant invoices.
  */
-import { TenantInvoice } from "../types";
+import type { TenantInvoice } from "../types.js";
 
 export function buildInvoiceEmailHtml(params: {
   invoice: TenantInvoice;

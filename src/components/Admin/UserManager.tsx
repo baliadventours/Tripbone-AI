@@ -23,9 +23,10 @@ interface UserManagerProps {
   setFormData?: (f: any) => void;
   formData?: any;
   initialOpenCreate?: boolean;
+  onHandledOpenCreate?: () => void;
 }
 
-export default function UserManager({ users = [], setUsers, currentUserProfile, initialOpenCreate = false }: UserManagerProps) {
+export default function UserManager({ users = [], setUsers, currentUserProfile, initialOpenCreate = false, onHandledOpenCreate }: UserManagerProps) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'staff' | 'supplier' | 'agent' | 'customer'>('all');
@@ -37,6 +38,7 @@ export default function UserManager({ users = [], setUsers, currentUserProfile, 
   useEffect(() => {
     if (initialOpenCreate) {
       handleOpenCreateModal();
+      if (onHandledOpenCreate) onHandledOpenCreate();
     }
   }, [initialOpenCreate]);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);

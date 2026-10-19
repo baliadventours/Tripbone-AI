@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
-import { tenantLogger } from "../lib/tenantLogger";
+import { tenantLogger } from "../lib/tenantLogger.js";
 
 let adminApp: any = null;
 let adminDb: any = null;

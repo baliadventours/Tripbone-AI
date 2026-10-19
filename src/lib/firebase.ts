@@ -217,7 +217,7 @@ export async function getDoc(reference: any): Promise<any> {
   const start = Date.now();
   try {
     const snap = await rawGetDoc(reference);
-    const docTenantId = snap?.exists?.() ? snap.data()?.tenantId || activeTenantId : activeTenantId;
+    const docTenantId = snap?.exists?.() ? (snap.data() as any)?.tenantId || activeTenantId : activeTenantId;
     tenantLogger.logQuery({
       operation: 'GET_DOC',
       path,
