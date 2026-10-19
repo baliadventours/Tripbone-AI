@@ -2801,9 +2801,11 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
     setIsUploading(true);
     try {
       const url = await uploadImage(file);
-      const newItinerary = [...(formData.itinerary || [])];
-      newItinerary[index] = { ...newItinerary[index], image: url };
-      setFormData({ ...formData, itinerary: newItinerary });
+      setFormData(prev => {
+        const newItinerary = [...(prev.itinerary || [])];
+        newItinerary[index] = { ...newItinerary[index], image: url };
+        return { ...prev, itinerary: newItinerary };
+      });
     } catch (error) {
       alert("Image upload failed");
     } finally {
@@ -2820,8 +2822,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
     try {
       const uploadPromises = Array.from(files).map(file => uploadImage(file as File));
       const urls = await Promise.all(uploadPromises);
-      const currentGallery = formData.gallery || [];
-      setFormData({ ...formData, gallery: [...currentGallery, ...urls] });
+      setFormData(prev => ({ ...prev, gallery: [...(prev.gallery || []), ...urls] }));
     } catch (error) {
       alert("Upload failed. Make sure your IMGBB API key is correct.");
     } finally {
@@ -6101,7 +6102,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
               installApp={handleInstallApp}
               setActiveMenu={setActiveMenu}
               setTourSupplierFilter={setTourSupplierFilter}
-              handleSeedDummyData={undefined}
+              handleSeedDummyData={seedDummyData}
             />
           )}
 
@@ -6167,6 +6168,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
                    activeMenu === 'labels' ? labels :
                    locations
                  }
+                 openMediaGallery={openMediaGallery}
                />
             </div>
           )}
@@ -6230,20 +6232,6 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
               tenantInvoices={tenantInvoices}
               currentUser={auth.currentUser}
             />
-          )}
-          {activeMenu === 'backup' && (
-            <div className="space-y-8 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4">
-              <DisasterRecoveryBackup
-                tours={tours}
-                bookings={bookings}
-                globalAddOns={globalAddOns}
-                globalTransports={globalTransports}
-                coupons={coupons}
-                onDataRestored={() => {
-                  window.location.reload();
-                }}
-              />
-            </div>
           )}
           {activeMenu === 'custom-domain' && (
             <CustomDomainSettings tenantData={tenantData} setTenantData={setTenantData} />
@@ -6336,6 +6324,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
                  formData={formData}
                  setActiveMenu={setActiveMenu}
                  initialOpenCreate={autoOpenCreateUser}
+                 onHandledOpenCreate={() => setAutoOpenCreateUser(false)}
                  roleFilter={
                    activeMenu === 'users-admins' ? 'admin' :
                    activeMenu === 'users-suppliers' ? 'supplier' :
@@ -6347,7 +6336,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
             </div>
           )}
           {activeMenu === 'access-roles' && (
-            <AccessRolesManager currentUserProfile={currentUserProfile} />
+            <AccessRolesManager currentUserProfile={currentUserProfile} setActiveMenu={setActiveMenu} />
           )}
           {activeMenu === 'urgency-points' && (
              <div className="space-y-8 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4">
@@ -6424,6 +6413,12 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
               globalAddOns={globalAddOns}
               globalTransports={globalTransports}
               allGuides={allGuides}
+              users={users}
+              urgencyPoints={urgencyPoints}
+              isUploading={isUploading}
+              setIsUploading={setIsUploading}
+              languagesText={languagesText}
+              setLanguagesText={setLanguagesText}
               currentUserProfile={currentUserProfile}
               loadingStates={loadingStates}
               highlightsText={highlightsText}
@@ -6559,7 +6554,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
       )}
 
       {/* Other Views Placeholders */}
-        {['schedule', 'payments'].includes(activeMenu) && (
+        {['payments'].includes(activeMenu) && (
            <div className="h-[70vh] flex flex-col items-center justify-center bg-white rounded-[10px] border border-gray-100 border-dashed motion-safe:animate-in motion-safe:fade-in">
               <div className="h-20 w-20 bg-orange-50 rounded-full flex items-center justify-center mb-6">
                 {menuItems.find(m => m.id === activeMenu)?.icon && (

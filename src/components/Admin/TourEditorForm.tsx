@@ -55,12 +55,19 @@ interface TourEditorFormProps {
   handleItineraryImageUpload: any;
   handleOpenGallery?: any;
   openMediaGallery?: any;
+  isUploading?: boolean;
+  setIsUploading?: any;
+  languagesText?: string;
+  setLanguagesText?: any;
 }
 
 export const TourEditorForm: React.FC<TourEditorFormProps> = ({
   users = [],
   urgencyPoints = [],
-
+  isUploading: isUploadingProp,
+  setIsUploading: setIsUploadingProp,
+  languagesText,
+  setLanguagesText,
   activeTab,
   setActiveTab,
   tabs,
@@ -100,7 +107,9 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
   handleOpenGallery,
   openMediaGallery: openMediaGalleryProp,
 }) => {
-  const [isUploading, setIsUploading] = React.useState(false);
+  const [localIsUploading, setLocalIsUploading] = React.useState(false);
+  const isUploading = isUploadingProp ?? localIsUploading;
+  const setIsUploading = setIsUploadingProp ?? setLocalIsUploading;
   const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
   const openMediaGallery = openMediaGalleryProp || handleOpenGallery || (() => {});
 
@@ -112,10 +121,15 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
   };
 
   const removeArrayItem = (field: string, index: number) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [field]: (prev[field] || []).filter((_: any, i: number) => i !== index)
-    }));
+    setFormData((prev: any) => {
+      const filtered = (prev[field] || []).filter((_: any, i: number) => i !== index);
+      return {
+        ...prev,
+        [field]: field === 'itinerary'
+          ? filtered.map((item: any, idx: number) => ({ ...item, day: idx + 1 }))
+          : filtered
+      };
+    });
   };
 
   const updateArrayItem = (field: string, index: number, updated: any) => {
