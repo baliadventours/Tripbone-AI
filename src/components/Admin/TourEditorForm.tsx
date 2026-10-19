@@ -54,6 +54,7 @@ interface TourEditorFormProps {
   handleFileUpload: any;
   handleItineraryImageUpload: any;
   handleOpenGallery?: any;
+  openMediaGallery?: any;
 }
 
 export const TourEditorForm: React.FC<TourEditorFormProps> = ({
@@ -97,10 +98,11 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
   handleFileUpload,
   handleItineraryImageUpload,
   handleOpenGallery,
+  openMediaGallery: openMediaGalleryProp,
 }) => {
   const [isUploading, setIsUploading] = React.useState(false);
   const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
-  const openMediaGallery = handleOpenGallery || (() => {});
+  const openMediaGallery = openMediaGalleryProp || handleOpenGallery || (() => {});
 
   const addArrayItem = (field: string, item: any) => {
     setFormData((prev: any) => ({
@@ -743,12 +745,14 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                         <button 
                           type="button" 
                           onClick={() => {
-                            openMediaGallery((urls) => {
-                              const currentGallery = formData.gallery || [];
-                              setFormData({ ...formData, gallery: [...currentGallery, ...urls] });
+                            openMediaGallery((urls: string[]) => {
+                              setFormData((prev: any) => ({
+                                ...prev,
+                                gallery: [...(prev.gallery || []), ...urls],
+                              }));
                             }, true);
                           }}
-                          className="text-blue-700 text-sm font-bold flex items-center gap-1 py-1.5 px-3 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors"
+                          className="text-blue-700 text-sm font-bold flex items-center gap-1 py-1.5 px-3 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer"
                         >
                           <ImageIcon className="h-4 w-4" />
                           Pick From Gallery
@@ -1408,24 +1412,24 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                                      <>
                                        <img src={item.pickup.image} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                          <button 
+                                           <button 
                                             type="button" 
                                             onClick={() => {
-                                              openMediaGallery((urls) => {
+                                              openMediaGallery((urls: string[]) => {
                                                 if (urls[0]) {
-                                                  updateArrayItem('itinerary', i, { 
-                                                    ...item, 
-                                                    pickup: { ...(typeof item.pickup === 'object' ? item.pickup : {}), image: urls[0], description: typeof item.pickup === 'object' ? item.pickup?.description || '' : item.pickup || '' } 
-                                                  });
+                                                  updateArrayItem('itinerary', i, (curr: any) => ({ 
+                                                    ...curr, 
+                                                    pickup: { ...(typeof curr?.pickup === 'object' ? curr.pickup : {}), image: urls[0], description: typeof curr?.pickup === 'object' ? curr.pickup?.description || '' : curr?.pickup || '' } 
+                                                  }));
                                                 }
                                               }, false);
                                             }} 
-                                            className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+                                            className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors cursor-pointer"
                                             title="Change Image from Gallery"
                                           >
                                             <ImageIcon className="h-4 w-4" />
                                           </button>
-                                          <button type="button" onClick={() => updateArrayItem('itinerary', i, { ...item, pickup: { ...item.pickup, image: '' } })} className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors" title="Delete Image"><Trash2 className="h-4 w-4" /></button>
+                                          <button type="button" onClick={() => updateArrayItem('itinerary', i, (curr: any) => ({ ...curr, pickup: { ...(typeof curr?.pickup === 'object' ? curr.pickup : {}), image: '' } }))} className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors cursor-pointer" title="Delete Image"><Trash2 className="h-4 w-4" /></button>
                                        </div>
                                      </>
                                    ) : (
@@ -1443,12 +1447,12 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                                                 if (file) {
                                                   try {
                                                     const url = await uploadImage(file);
-                                                    updateArrayItem('itinerary', i, { 
-                                                      ...item, 
-                                                      pickup: { ...(typeof item.pickup === 'object' ? item.pickup : {}), image: url, description: typeof item.pickup === 'object' ? item.pickup?.description || '' : item.pickup || '' } 
-                                                    });
+                                                    updateArrayItem('itinerary', i, (curr: any) => ({ 
+                                                      ...curr, 
+                                                      pickup: { ...(typeof curr?.pickup === 'object' ? curr.pickup : {}), image: url, description: typeof curr?.pickup === 'object' ? curr.pickup?.description || '' : curr?.pickup || '' } 
+                                                    }));
                                                   } catch (err) {
-                                                    alert("Failed to upload pickup image");
+                                                    console.error("Failed to upload pickup image", err);
                                                   }
                                                 }
                                               }} 
@@ -1460,16 +1464,16 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                                           <button 
                                             type="button" 
                                             onClick={() => {
-                                              openMediaGallery((urls) => {
+                                              openMediaGallery((urls: string[]) => {
                                                 if (urls[0]) {
-                                                  updateArrayItem('itinerary', i, { 
-                                                    ...item, 
-                                                    pickup: { ...(typeof item.pickup === 'object' ? item.pickup : {}), image: urls[0], description: typeof item.pickup === 'object' ? item.pickup?.description || '' : item.pickup || '' } 
-                                                  });
+                                                  updateArrayItem('itinerary', i, (curr: any) => ({ 
+                                                    ...curr, 
+                                                    pickup: { ...(typeof curr?.pickup === 'object' ? curr.pickup : {}), image: urls[0], description: typeof curr?.pickup === 'object' ? curr.pickup?.description || '' : curr?.pickup || '' } 
+                                                  }));
                                                 }
                                               }, false);
                                             }}
-                                            className="bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 p-1.5 rounded-md text-xs font-bold leading-none shrink-0 shadow-xs flex items-center justify-center"
+                                            className="bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 p-1.5 rounded-md text-xs font-bold leading-none shrink-0 shadow-xs flex items-center justify-center cursor-pointer"
                                           >
                                             <ImageIcon className="h-3.5 w-3.5" />
                                           </button>
@@ -1501,21 +1505,21 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                                      <>
                                        <img src={item.image} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                          <button 
+                                           <button 
                                             type="button" 
                                             onClick={() => {
-                                              openMediaGallery((urls) => {
+                                              openMediaGallery((urls: string[]) => {
                                                 if (urls[0]) {
-                                                  updateArrayItem('itinerary', i, { ...item, image: urls[0] });
+                                                  updateArrayItem('itinerary', i, (curr: any) => ({ ...curr, image: urls[0] }));
                                                 }
                                               }, false);
                                             }} 
-                                            className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors shadow-lg"
+                                            className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors shadow-lg cursor-pointer"
                                             title="Change image from Gallery"
                                           >
                                             <ImageIcon className="h-6 w-6" />
                                           </button>
-                                          <button type="button" onClick={() => updateArrayItem('itinerary', i, { ...item, image: '' })} className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-colors shadow-lg" title="Delete image"><Trash2 className="h-6 w-6" /></button>
+                                          <button type="button" onClick={() => updateArrayItem('itinerary', i, (curr: any) => ({ ...curr, image: '' }))} className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-colors shadow-lg cursor-pointer" title="Delete image"><Trash2 className="h-6 w-6" /></button>
                                        </div>
                                      </>
                                    ) : (
@@ -1534,13 +1538,13 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                                          <button 
                                            type="button" 
                                            onClick={() => {
-                                             openMediaGallery((urls) => {
+                                             openMediaGallery((urls: string[]) => {
                                                if (urls[0]) {
-                                                 updateArrayItem('itinerary', i, { ...item, image: urls[0] });
+                                                 updateArrayItem('itinerary', i, (curr: any) => ({ ...curr, image: urls[0] }));
                                                }
                                              }, false);
                                            }}
-                                           className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 duration-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm"
+                                           className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 duration-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm cursor-pointer"
                                          >
                                            <ImageIcon className="h-4 w-4" />
                                            Pick Gallery
@@ -1749,17 +1753,23 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            openMediaGallery((urls) => {
+                                            openMediaGallery((urls: string[]) => {
                                               if (urls[0]) {
-                                                const updated = [...(formData.multiDayItinerary || [])];
-                                                const items = [...updated[dayIdx].itineraryItems];
-                                                items[itemIdx] = { ...items[itemIdx], image: urls[0] };
-                                                updated[dayIdx] = { ...updated[dayIdx], itineraryItems: items };
-                                                setFormData({ ...formData, multiDayItinerary: updated });
+                                                setFormData((prev: any) => {
+                                                  const updated = [...(prev.multiDayItinerary || [])];
+                                                  if (updated[dayIdx]) {
+                                                    const items = [...(updated[dayIdx].itineraryItems || [])];
+                                                    if (items[itemIdx]) {
+                                                      items[itemIdx] = { ...items[itemIdx], image: urls[0] };
+                                                      updated[dayIdx] = { ...updated[dayIdx], itineraryItems: items };
+                                                    }
+                                                  }
+                                                  return { ...prev, multiDayItinerary: updated };
+                                                });
                                               }
                                             }, false);
                                           }}
-                                          className="flex-1 py-2 px-3 bg-white border border-gray-200 hover:border-blue-300 text-gray-700 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-2xs"
+                                          className="flex-1 py-2 px-3 bg-white border border-gray-200 hover:border-blue-300 text-gray-700 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                                         >
                                           <ImageIcon className="h-3.5 w-3.5 text-blue-600" />
                                           Image
@@ -1910,15 +1920,19 @@ export const TourEditorForm: React.FC<TourEditorFormProps> = ({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  openMediaGallery((urls) => {
+                                  openMediaGallery((urls: string[]) => {
                                     if (urls[0]) {
-                                      const updated = [...(formData.accommodations || [])];
-                                      updated[accIdx] = { ...updated[accIdx], image: urls[0] };
-                                      setFormData({ ...formData, accommodations: updated });
+                                      setFormData((prev: any) => {
+                                        const updated = [...(prev.accommodations || [])];
+                                        if (updated[accIdx]) {
+                                          updated[accIdx] = { ...updated[accIdx], image: urls[0] };
+                                        }
+                                        return { ...prev, accommodations: updated };
+                                      });
                                     }
                                   }, false);
                                 }}
-                                className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-emerald-500 hover:bg-emerald-50/20 text-gray-500 font-bold text-xs"
+                                className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-emerald-500 hover:bg-emerald-50/20 text-gray-500 font-bold text-xs cursor-pointer"
                               >
                                 <ImageIcon className="h-5 w-5 text-emerald-600" />
                                 Select Image

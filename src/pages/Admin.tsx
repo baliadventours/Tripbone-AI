@@ -215,7 +215,15 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
   const [galleryFilterTab, setGalleryFilterTab] = useState('all');
 
   
-  const handleOpenGallery = (target: "cover" | "gallery" | "itinerary", dayIndex?: number) => {
+  const handleOpenGallery = (
+    target: "cover" | "gallery" | "itinerary" | ((urls: string[]) => void),
+    dayIndexOrMultiSelect?: number | boolean
+  ) => {
+    if (typeof target === "function") {
+      openMediaGallery(target, Boolean(dayIndexOrMultiSelect));
+      return;
+    }
+    const dayIndex = typeof dayIndexOrMultiSelect === "number" ? dayIndexOrMultiSelect : undefined;
     if (target === "cover") {
       openMediaGallery((urls) => {
         if (urls[0]) setFormData((prev: any) => ({ ...prev, featuredImage: urls[0] }));
@@ -227,11 +235,13 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
     } else if (target === "itinerary" && dayIndex !== undefined) {
       openMediaGallery((urls) => {
         if (urls[0]) {
-          const newItinerary = [...(formData.itinerary || [])];
-          if (newItinerary[dayIndex]) {
-            newItinerary[dayIndex] = { ...newItinerary[dayIndex], image: urls[0] };
-            setFormData((prev: any) => ({ ...prev, itinerary: newItinerary }));
-          }
+          setFormData((prev: any) => {
+            const newItinerary = [...(prev.itinerary || [])];
+            if (newItinerary[dayIndex]) {
+              newItinerary[dayIndex] = { ...newItinerary[dayIndex], image: urls[0] };
+            }
+            return { ...prev, itinerary: newItinerary };
+          });
         }
       });
     }
@@ -249,7 +259,7 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
     try {
       const urlsSet = new Set<string>();
       
-      // 1. Scan in-memory Tours
+      // 1. Scan in-memory Tours (including single-day & multi-day itinerary & accommodations)
       tours.forEach(t => {
         if (t.featuredImage) urlsSet.add(t.featuredImage);
         if (t.gallery) t.gallery.forEach(url => { if (url) urlsSet.add(url); });
@@ -261,21 +271,53 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
             }
           });
         }
+        if ((t as any).multiDayItinerary) {
+          ((t as any).multiDayItinerary as any[]).forEach(day => {
+            (day.itineraryItems || []).forEach((item: any) => {
+              if (item.image) urlsSet.add(item.image);
+            });
+          });
+        }
+        if ((t as any).accommodations) {
+          ((t as any).accommodations as any[]).forEach(acc => {
+            if (acc.image) urlsSet.add(acc.image);
+          });
+        }
         if (t.seo?.ogImage) urlsSet.add(t.seo.ogImage);
       });
 
       // 2. Scan Tour Editor form state (current edit session)
       if (formData?.featuredImage) urlsSet.add(formData.featuredImage);
-      if (formData?.gallery) formData.gallery.forEach(url => { if (url) urlsSet.add(url); });
+      if (formData?.gallery) formData.gallery.forEach((url: string) => { if (url) urlsSet.add(url); });
       if (formData?.itinerary) {
-        formData.itinerary.forEach(day => {
+        formData.itinerary.forEach((day: any) => {
           if (day.image) urlsSet.add(day.image);
           if (typeof day.pickup === 'object' && day.pickup?.image) {
             urlsSet.add(day.pickup.image);
           }
         });
       }
+      if (formData?.multiDayItinerary) {
+        formData.multiDayItinerary.forEach((day: any) => {
+          (day.itineraryItems || []).forEach((item: any) => {
+            if (item.image) urlsSet.add(item.image);
+          });
+        });
+      }
+      if (formData?.accommodations) {
+        formData.accommodations.forEach((acc: any) => {
+          if (acc.image) urlsSet.add(acc.image);
+        });
+      }
       if (formData?.seo?.ogImage) urlsSet.add(formData.seo.ogImage);
+
+      // 2b. Scan Categories & Destinations in memory
+      categories.forEach((c: any) => {
+        if (c.image) urlsSet.add(c.image);
+      });
+      locations.forEach((l: any) => {
+        if (l.image) urlsSet.add(l.image);
+      });
 
       // 3. Scan posts from Firestore
       const postsSnap = await getDocs(collection(db, 'posts'));
@@ -6396,7 +6438,8 @@ export default function Admin({ overrideMenu, overrideTab, isCentralPortal = fal
               setExpandedItinerary={setExpandedItinerary}
               handleFileUpload={handleFileUpload}
               handleItineraryImageUpload={handleItineraryImageUpload}
-              handleOpenGallery={handleOpenGallery}
+              handleOpenGallery={openMediaGallery}
+              openMediaGallery={openMediaGallery}
             />
           )}
       {(activeMenu === 'suppliers' || activeMenu === 'agents') && (
