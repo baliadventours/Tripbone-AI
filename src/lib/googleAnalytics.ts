@@ -1,6 +1,7 @@
 // Google Analytics 4 (GA4), Google Tag Manager (GTM), & Google Ads Conversion Tracker for Tripbone SaaS
 import { db } from './firebase';
 import { doc, getDoc } from '@/src/lib/firebase';
+import { tenantLogger } from './tenantLogger';
 
 export interface GAEvent {
   action: string;
@@ -44,17 +45,28 @@ export const recordedGAEvents: Array<{
 
 // Helper to push to interactive dashboard stream
 const logToInteractiveStream = (type: 'pageview' | 'event' | 'conversion', name: string, params: any) => {
+  const taggedParams = {
+    ...params,
+    tenantId: activeTenantId || 'master',
+  };
+
   recordedGAEvents.unshift({
     timestamp: new Date().toLocaleTimeString(),
     type,
     name,
-    params
+    params: taggedParams
   });
   
   // Keep last 50 events in buffer
   if (recordedGAEvents.length > 50) {
     recordedGAEvents.pop();
   }
+
+  tenantLogger.logEvent(
+    `GA_${type.toUpperCase()}_${name}`,
+    taggedParams,
+    { category: 'analytics_event', tenantId: activeTenantId }
+  );
 
   // Trigger a custom event so the UI can listen and refresh live
   if (typeof window !== 'undefined') {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit, doc, getDoc, onSnapshot } from '@/src/lib/firebase';
 import { db, setActiveTenantId as setFirebaseTenantId } from './firebase';
+import { tenantLogger } from './tenantLogger';
 import { Tenant } from '../types';
 
 interface TenantContextType {
@@ -120,6 +121,12 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   };
 
   const stopImpersonation = () => {
+    const prevImpersonatedId = sessionStorage.getItem('tripbone_impersonated_tenant_id');
+    tenantLogger.logEvent(
+      'IMPERSONATION_STOPPED',
+      { impersonatedTenantId: prevImpersonatedId },
+      { category: 'tenant_lifecycle', tenantId: prevImpersonatedId }
+    );
     sessionStorage.removeItem('tripbone_is_impersonating');
     sessionStorage.removeItem('tripbone_impersonated_tenant_id');
     localStorage.removeItem('tripbone_preview_tenant');
@@ -161,6 +168,11 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   };
 
   const impersonateTenant = (targetTenant: Tenant) => {
+    tenantLogger.logEvent(
+      'IMPERSONATION_STARTED',
+      { targetTenantId: targetTenant.id, targetSlug: targetTenant.slug },
+      { category: 'tenant_lifecycle', tenantId: targetTenant.id }
+    );
     // When impersonating, we just open a new tab with the target URL and impersonate parameters.
     // The new tab will initialize its own sessionStorage.
     if (targetTenant.slug) {
@@ -337,6 +349,12 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           setActiveTenantId(null);
           setIsMaster(true);
           setIsImpersonating(false);
+          tenantLogger.setContext({
+            tenantId: null,
+            tenantSlug: null,
+            isMaster: true,
+            isImpersonating: false,
+          });
           setLoading(false);
           return;
         }
@@ -438,6 +456,23 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
             sessionStorage.removeItem('tripbone_is_impersonating');
             sessionStorage.removeItem('tripbone_impersonated_tenant_id');
           }
+
+          tenantLogger.setContext({
+            tenantId: tenantDocId,
+            tenantSlug: tenantData.slug || slug || null,
+            isMaster: false,
+            isImpersonating: Boolean(isExplicitImpersonate),
+          });
+          tenantLogger.logEvent(
+            'TENANT_WORKSPACE_RESOLVED',
+            {
+              tenantId: tenantDocId,
+              slug: tenantData.slug || slug,
+              customDomain: tenantData.customDomain || customDomain,
+              isImpersonating: Boolean(isExplicitImpersonate),
+            },
+            { category: 'tenant_lifecycle', tenantId: tenantDocId }
+          );
         } else {
           console.warn(`Tenant not found for slug: ${slug}, domain: ${customDomain}, impersonateId: ${impersonateId}. Underlying error: ${fetchError}`);
           setError(fetchError || `We couldn't find the tenant space for "${slug || customDomain || impersonateId}".`);
@@ -445,8 +480,20 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           setTenantIdInternal(null);
           setActiveTenantId(null);
           // Crucial: On a custom domain, NEVER flag as master (SaaS Marketing)
-          setIsMaster(Boolean(!customDomain && !slug));
+          const masterFlag = Boolean(!customDomain && !slug);
+          setIsMaster(masterFlag);
           setIsImpersonating(false);
+          tenantLogger.setContext({
+            tenantId: null,
+            tenantSlug: slug || null,
+            isMaster: masterFlag,
+            isImpersonating: false,
+          });
+          tenantLogger.logEvent(
+            'TENANT_WORKSPACE_NOT_FOUND',
+            { slug, customDomain, impersonateId, error: fetchError },
+            { category: 'tenant_lifecycle', level: 'warn' }
+          );
         }
       } catch (err: any) {
         console.error('Error resolving tenant:', err);

@@ -1,5 +1,6 @@
 import { db } from './firebase';
-import { collection, addDoc } from '@/src/lib/firebase';
+import { collection, addDoc, getActiveTenantId } from '@/src/lib/firebase';
+import { tenantLogger } from './tenantLogger';
 
 export interface SimplePageView {
   path: string;
@@ -8,6 +9,7 @@ export interface SimplePageView {
   sessionId: string;
   keywords: string;
   timestamp: string;
+  tenantId?: string;
 }
 
 // Get or create a session ID stored in sessionStorage to identify unique browsing sessions
@@ -48,14 +50,22 @@ export const logSimplePageView = async (path: string) => {
       referrerStr = 'Internal Navigation';
     }
 
+    const currentTenantId = getActiveTenantId();
     const payload: SimplePageView = {
       path,
       referrer: referrerStr,
       userAgent: navigator.userAgent,
       sessionId: getSessionId(),
       keywords: keywords.trim(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...(currentTenantId ? { tenantId: currentTenantId } : {})
     };
+
+    tenantLogger.logEvent(
+      'SIMPLE_PAGE_VIEW',
+      { path, referrer: referrerStr, keywords: keywords.trim() },
+      { category: 'analytics_event', tenantId: currentTenantId, path }
+    );
 
     const ref = collection(db, 'analytics_pageviews');
     await addDoc(ref, payload);
@@ -63,3 +73,4 @@ export const logSimplePageView = async (path: string) => {
     console.warn('[Simple Analytics] Logging skipped or offline:', error);
   }
 };
+

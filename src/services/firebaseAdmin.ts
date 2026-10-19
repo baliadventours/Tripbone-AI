@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
+import { tenantLogger } from "../lib/tenantLogger";
 
 let adminApp: any = null;
 let adminDb: any = null;
@@ -242,6 +243,7 @@ export function createFirestoreRestProxy(): any {
 
         if (prop === 'get') {
           return async () => {
+            const start = Date.now();
             if (state.isCollection) {
               const colName = state.path[state.path.length - 1];
               const queryOpts: any = {};
@@ -252,8 +254,19 @@ export function createFirestoreRestProxy(): any {
               }
               if (state.limitCount) queryOpts.limit = state.limitCount;
 
+              const tenantFilter = (state.filters || []).find((f: any) => f.field === 'tenantId');
+              const filterTenantId = tenantFilter?.value || null;
+
               try {
                 const docs = await fetchFromRESTLocal(colName, queryOpts);
+                tenantLogger.logQuery({
+                  operation: 'REST_QUERY',
+                  path: colName,
+                  tenantId: filterTenantId,
+                  isTenantFiltered: Boolean(filterTenantId),
+                  durationMs: Date.now() - start,
+                  resultCount: docs ? docs.length : 0,
+                });
                 return {
                   empty: !docs || docs.length === 0,
                   size: docs ? docs.length : 0,
@@ -275,14 +288,25 @@ export function createFirestoreRestProxy(): any {
                   }
                 };
               } catch (e) {
+                tenantLogger.logError('REST_QUERY', colName, e, undefined, filterTenantId);
                 console.error(`[REST Proxy get collection ${colName} failed]`, e);
                 return { empty: true, size: 0, docs: [], forEach: () => {} };
               }
             } else {
               const docId = state.path[state.path.length - 1];
               const colName = state.path[state.path.length - 2];
+              const fullPath = `${colName}/${docId}`;
               try {
                 const docData = await getDocViaRest(colName, docId);
+                const docTenantId = docData?.tenantId || null;
+                tenantLogger.logQuery({
+                  operation: 'REST_GET_DOC',
+                  path: fullPath,
+                  tenantId: docTenantId,
+                  isTenantFiltered: Boolean(docTenantId),
+                  durationMs: Date.now() - start,
+                  resultCount: docData ? 1 : 0,
+                });
                 return {
                   id: docId,
                   exists: !!docData,
@@ -290,6 +314,7 @@ export function createFirestoreRestProxy(): any {
                   get: (f: string) => docData ? docData[f] : undefined
                 };
               } catch (e) {
+                tenantLogger.logError('REST_GET_DOC', fullPath, e);
                 console.error(`[REST Proxy get doc ${colName}/${docId} failed]`, e);
                 return { id: docId, exists: false, data: () => ({}) };
               }
@@ -301,10 +326,21 @@ export function createFirestoreRestProxy(): any {
           return async (data: any, options?: { merge?: boolean }) => {
             const docId = state.path[state.path.length - 1];
             const colName = state.path[state.path.length - 2];
+            const fullPath = `${colName}/${docId}`;
+            const start = Date.now();
             try {
               const res = await writeDocViaRest(colName, docId, data);
+              tenantLogger.logMutation({
+                operation: 'REST_WRITE',
+                path: fullPath,
+                tenantId: data?.tenantId || null,
+                isTenantFiltered: Boolean(data?.tenantId),
+                durationMs: Date.now() - start,
+                metadata: options ? { merge: Boolean(options.merge) } : undefined,
+              });
               return res;
             } catch (e) {
+              tenantLogger.logError('REST_WRITE', fullPath, e, undefined, data?.tenantId || null);
               console.error(`[REST Proxy set ${colName}/${docId} failed]`, e);
               throw e;
             }
@@ -315,10 +351,20 @@ export function createFirestoreRestProxy(): any {
           return async (data: any) => {
             const docId = state.path[state.path.length - 1];
             const colName = state.path[state.path.length - 2];
+            const fullPath = `${colName}/${docId}`;
+            const start = Date.now();
             try {
               const res = await writeDocViaRest(colName, docId, data);
+              tenantLogger.logMutation({
+                operation: 'REST_WRITE',
+                path: fullPath,
+                tenantId: data?.tenantId || null,
+                isTenantFiltered: Boolean(data?.tenantId),
+                durationMs: Date.now() - start,
+              });
               return res;
             } catch (e) {
+              tenantLogger.logError('REST_WRITE', fullPath, e, undefined, data?.tenantId || null);
               console.error(`[REST Proxy update ${colName}/${docId} failed]`, e);
               throw e;
             }
@@ -328,15 +374,24 @@ export function createFirestoreRestProxy(): any {
         if (prop === 'add') {
           return async (data: any) => {
             const colName = state.path[state.path.length - 1];
+            const start = Date.now();
             try {
               const res = await createDocViaRest(colName, data);
               const docId = res?.name ? res.name.split('/').pop() : Math.random().toString(36).substring(2);
+              tenantLogger.logMutation({
+                operation: 'REST_WRITE',
+                path: `${colName}/${docId}`,
+                tenantId: data?.tenantId || null,
+                isTenantFiltered: Boolean(data?.tenantId),
+                durationMs: Date.now() - start,
+              });
               return {
                 id: docId,
                 path: `${colName}/${docId}`,
                 get: async () => ({ exists: true, data: () => data })
               };
             } catch (e) {
+              tenantLogger.logError('REST_WRITE', colName, e, undefined, data?.tenantId || null);
               console.error(`[REST Proxy add ${colName} failed]`, e);
               throw e;
             }
@@ -347,10 +402,18 @@ export function createFirestoreRestProxy(): any {
           return async () => {
             const docId = state.path[state.path.length - 1];
             const colName = state.path[state.path.length - 2];
+            const fullPath = `${colName}/${docId}`;
+            const start = Date.now();
             try {
               const res = await deleteDocViaRest(colName, docId);
+              tenantLogger.logMutation({
+                operation: 'REST_DELETE',
+                path: fullPath,
+                durationMs: Date.now() - start,
+              });
               return res;
             } catch (e) {
+              tenantLogger.logError('REST_DELETE', fullPath, e);
               console.warn(`[REST Proxy] delete failed for ${colName}/${docId}`, e);
               return true; // Still return true so things don't crash
             }

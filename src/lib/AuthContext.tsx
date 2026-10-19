@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot, getDocs, query, collection, where, setDoc, deleteDoc, serverTimestamp } from '@/src/lib/firebase';
 import { auth, db } from './firebase';
+import { tenantLogger } from './tenantLogger';
 import { UserProfile } from '../types';
 import { identifyPostHogUser, resetPostHogUser } from './posthog';
 
@@ -30,11 +31,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
+      tenantLogger.setContext({ userId: authUser?.uid || null });
       if (!authUser) {
         setProfile(null);
         setWishlist([]);
         setLoading(false);
         resetPostHogUser();
+        tenantLogger.logEvent('AUTH_SIGN_OUT', undefined, { category: 'auth_event' });
+      } else {
+        tenantLogger.logEvent(
+          'AUTH_STATE_ACTIVE',
+          { userId: authUser.uid, email: authUser.email },
+          { category: 'auth_event' }
+        );
       }
     });
 

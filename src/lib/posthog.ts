@@ -12,6 +12,7 @@
 import posthog from 'posthog-js';
 import { db } from './firebase';
 import { doc, getDoc } from './firebase';
+import { tenantLogger } from './tenantLogger';
 
 export interface PostHogConfig {
   apiKey?: string;
@@ -42,16 +43,27 @@ const logToDebuggerStream = (
   name: string,
   properties: Record<string, any> = {}
 ) => {
+  const taggedProps = {
+    ...properties,
+    tenant_id: properties.tenant_id || properties.tenantId || activeTenantId || 'master',
+  };
+
   recordedPostHogEvents.unshift({
     timestamp: new Date().toLocaleTimeString(),
     type,
     name,
-    properties
+    properties: taggedProps
   });
 
   if (recordedPostHogEvents.length > 50) {
     recordedPostHogEvents.pop();
   }
+
+  tenantLogger.logEvent(
+    `POSTHOG_${type.toUpperCase()}_${name}`,
+    taggedProps,
+    { category: 'analytics_event', tenantId: activeTenantId }
+  );
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('posthog-event-logged'));
