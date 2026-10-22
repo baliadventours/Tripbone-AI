@@ -14,11 +14,61 @@ import { useDynamicPage } from '../hooks/useDynamicPage';
 import DynamicPageLayout from '../components/DynamicPageLayout';
 import SmartImage from '../components/SmartImage';
 
+const SAAS_FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+];
+
+function getPostImage(post: BlogPost, idx = 0): string {
+  const raw =
+    post.featuredImage ||
+    (post as any).coverImage ||
+    (post as any).image ||
+    '';
+  if (raw && typeof raw === 'string' && raw.trim().length > 0) {
+    return raw.trim();
+  }
+  return SAAS_FALLBACK_IMAGES[idx % SAAS_FALLBACK_IMAGES.length];
+}
+
+function formatPostDate(post: BlogPost, fallback = 'Recent'): string {
+  const val: any =
+    post.publishedAt ||
+    post.createdAt ||
+    (post as any).updatedAt ||
+    (post as any).date;
+  if (!val) return fallback;
+  let d: Date | null = null;
+  if (typeof val.toDate === 'function') {
+    d = val.toDate();
+  } else if (typeof val.seconds === 'number') {
+    d = new Date(val.seconds * 1000);
+  } else if (val instanceof Date) {
+    d = val;
+  } else if (typeof val === 'string' || typeof val === 'number') {
+    const parsed = new Date(val);
+    if (!isNaN(parsed.getTime())) d = parsed;
+  }
+  if (!d || isNaN(d.getTime())) return fallback;
+  return d.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 export default function BlogArchive() {
   const { settings } = useSettings();
   const { isMaster, tenantId, tenant } = useTenant();
   const { pageData } = useDynamicPage('blog');
-  const isSaaSBlog = isMaster || !tenantId || tenant?.isSaaS || tenantId === 'global';
+  const isSaaSBlog =
+    isMaster ||
+    !tenantId ||
+    tenant?.isSaaS ||
+    tenantId === 'global' ||
+    (typeof window !== 'undefined' && window.location.hostname.includes('tripbone.com'));
   const pageTitle = formatPageTitle(
     isSaaSBlog ? 'Tripbone Platform Blog & Updates' : 'Travel Stories', 
     settings?.siteName || (isSaaSBlog ? 'Tripbone' : 'Bali Adventours'), 
@@ -32,15 +82,6 @@ export default function BlogArchive() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-
-  if (pageData && pageData.content) {
-    return (
-      <DynamicPageLayout
-        fallbackTitle="Travel Stories"
-        {...pageData}
-      />
-    );
-  }
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -97,6 +138,15 @@ export default function BlogArchive() {
     return unsubscribe;
   }, [isSaaSBlog, tenantId]);
 
+  if (!isSaaSBlog && pageData && pageData.content) {
+    return (
+      <DynamicPageLayout
+        fallbackTitle="Travel Stories"
+        {...pageData}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -110,13 +160,16 @@ export default function BlogArchive() {
       <div className="min-h-screen bg-white">
          <Helmet><title>{pageTitle}</title></Helmet>
          <div className="container mx-auto px-4 lg:px-8 pt-32 pb-20">
-            <h1 className="text-4xl font-bold text-gray-900 mb-12">Travel Stories</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-12">
+              {isSaaSBlog ? 'Operator Growth & Platform Insights' : 'Travel Stories'}
+            </h1>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-               {posts.map(post => (
+               {posts.map((post, idx) => (
                   <Link key={post.id} to={`/blog/${post.slug}`} className="group block">
                      <div className="relative aspect-square overflow-hidden rounded-2xl mb-4">
                         <SmartImage 
-                          src={post.featuredImage} 
+                          src={getPostImage(post, idx)} 
+                          fallbackSrc={SAAS_FALLBACK_IMAGES[idx % SAAS_FALLBACK_IMAGES.length]}
                           alt={post.title}
                           className="group-hover:scale-105 transition-transform" 
                           aspectRatio="square"
@@ -146,11 +199,12 @@ export default function BlogArchive() {
                  </div>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                 {filteredPosts.map(post => (
+                 {filteredPosts.map((post, idx) => (
                     <Link key={post.id} to={`/blog/${post.slug}`} className="group bg-white p-4 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all">
                        <div className="relative aspect-[16/10] overflow-hidden rounded-[2rem] mb-6">
                           <SmartImage 
-                            src={post.featuredImage} 
+                            src={getPostImage(post, idx)} 
+                            fallbackSrc={SAAS_FALLBACK_IMAGES[idx % SAAS_FALLBACK_IMAGES.length]}
                             alt={post.title}
                             className="group-hover:scale-110 transition-transform duration-500" 
                             aspectRatio="auto"
@@ -178,7 +232,14 @@ export default function BlogArchive() {
     <div className="bg-white min-h-screen font-sans">
       <Helmet>
         <title>{pageTitle}</title>
-        <meta name="description" content={`Discover travel stories, tips, and inspiration for your next Bali adventure from the experts at ${settings?.siteName || 'Bali Adventours'}.`} />
+        <meta
+          name="description"
+          content={
+            isSaaSBlog
+              ? 'Actionable growth strategies, operator tips, platform guides, and booking software comparisons from Tripbone.'
+              : `Discover travel stories, tips, and inspiration for your next Bali adventure from the experts at ${settings?.siteName || 'Bali Adventours'}.`
+          }
+        />
       </Helmet>
       {/* Header Section */}
       <section className="pt-32 pb-12 text-center border-b border-gray-50">
@@ -188,7 +249,7 @@ export default function BlogArchive() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-6xl font-black text-gray-900 mb-6 tracking-tight"
           >
-            {pageData?.title || "Travel Inspiration"}
+            {isSaaSBlog ? "Operator Growth & Platform Insights" : (pageData?.title || "Travel Inspiration")}
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -196,7 +257,9 @@ export default function BlogArchive() {
             transition={{ delay: 0.1 }}
             className="text-lg text-gray-500 max-w-2xl mx-auto font-medium"
           >
-            {pageData?.subtitle || "Discover the best of Bali through our guides, tips, and local insights"}
+            {isSaaSBlog
+              ? "Actionable strategies, booking technology guides, and commission-free growth playbooks for modern tour & fleet operators"
+              : (pageData?.subtitle || "Discover the best of Bali through our guides, tips, and local insights")}
           </motion.p>
         </div>
       </section>
@@ -243,7 +306,8 @@ export default function BlogArchive() {
                       <Link to={`/blog/${post.slug}`}>
                         <div className="relative aspect-[16/9] overflow-hidden rounded-3xl mb-6 shadow-2xl shadow-gray-200/50">
                           <SmartImage 
-                            src={post.featuredImage || `https://picsum.photos/seed/${post.slug}/1200/800`} 
+                            src={getPostImage(post, idx)} 
+                            fallbackSrc={SAAS_FALLBACK_IMAGES[idx % SAAS_FALLBACK_IMAGES.length]}
                             alt={post.title}
                             className="group-hover:scale-110 transition-transform duration-700"
                             aspectRatio="video"
@@ -255,7 +319,7 @@ export default function BlogArchive() {
                             <span className="h-1 w-1 bg-gray-200 rounded-full" />
                             <span className="flex items-center gap-1">
                               <Icons.Calendar className="h-3.5 w-3.5" />
-                              {post.publishedAt?.toDate ? post.publishedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recent'}
+                              {formatPostDate(post)}
                             </span>
                           </div>
                           <h3 className="text-3xl font-black text-gray-900 group-hover:text-primary transition-colors tracking-tight leading-[1.1]">
@@ -265,7 +329,7 @@ export default function BlogArchive() {
                             {post.excerpt}
                           </p>
                           <p className="text-xs font-bold text-gray-400">
-                             {post.publishedAt?.toDate ? post.publishedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Draft'}
+                             {(post as any).readTime || formatPostDate(post, 'Verified Article')}
                           </p>
                         </div>
                       </Link>
@@ -293,7 +357,8 @@ export default function BlogArchive() {
                     <Link to={`/blog/${post.slug}`}>
                       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl mb-6 shadow-xl shadow-gray-100">
                          <SmartImage 
-                           src={post.featuredImage || `https://picsum.photos/seed/${post.slug}/800/600`} 
+                           src={getPostImage(post, idx + 2)} 
+                           fallbackSrc={SAAS_FALLBACK_IMAGES[(idx + 2) % SAAS_FALLBACK_IMAGES.length]}
                            alt={post.title}
                            className="group-hover:scale-110 transition-transform duration-500"
                            aspectRatio="standard"
@@ -313,7 +378,7 @@ export default function BlogArchive() {
                         </p>
                         <div className="mt-auto flex items-center gap-2 text-gray-400 font-bold text-[10px]">
                           <Icons.Clock className="h-3.5 w-3.5" />
-                          <span>{post.publishedAt?.toDate ? post.publishedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recent'}</span>
+                          <span>{formatPostDate(post)}</span>
                         </div>
                       </div>
                     </Link>
@@ -336,18 +401,20 @@ export default function BlogArchive() {
          <div className="absolute inset-0 bg-primary opacity-10 mix-blend-overlay" />
          <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
-              {pageData?.newsletterTitle || "Stay in the Loop"}
+              {isSaaSBlog ? "Scale Your Direct Bookings" : (pageData?.newsletterTitle || "Stay in the Loop")}
             </h2>
             <p className="text-orange-100/70 font-bold mb-10 text-lg">
-              {pageData?.newsletterSubtitle || "Get the latest travel tips and exclusive Bali offers delivered to your inbox."}
+              {isSaaSBlog
+                ? "Get zero-commission growth playbooks, operator tips, and Tripbone platform updates delivered straight to your inbox."
+                : (pageData?.newsletterSubtitle || "Get the latest travel tips and exclusive Bali offers delivered to your inbox.")}
             </p>
-            <form className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
+            <form className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto" onSubmit={(e) => e.preventDefault()}>
                <input 
                  type="email" 
                  placeholder="Your email address" 
                  className="flex-1 px-8 py-5 rounded-[10px] bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:bg-white/20 transition-all font-bold"
                />
-               <button className="px-10 py-5 bg-primary text-white font-black rounded-[10px] hover:bg-orange-700 transition-all shadow-xl shadow-orange-950 text-xs">
+               <button type="submit" className="px-10 py-5 bg-primary text-white font-black rounded-[10px] hover:bg-orange-700 transition-all shadow-xl shadow-orange-950 text-xs">
                  Subscribe
                </button>
             </form>

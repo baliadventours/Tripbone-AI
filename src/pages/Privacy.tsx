@@ -11,6 +11,9 @@ export default function Privacy() {
   const { pageData } = useDynamicPage('privacy');
   const pageTitle = formatPageTitle('Privacy Policy', settings?.siteName || 'Bali Adventours', settings?.pageTitleFormat);
   
+  const [activeSection, setActiveSection] = useState('intro');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
   if (pageData && pageData.content) {
     return (
       <DynamicPageLayout
@@ -23,9 +26,6 @@ export default function Privacy() {
   const siteName = settings?.siteName || 'Bali Adventours';
   const supportEmail = settings?.supportEmail || 'support@tripbone.com';
   const supportPhone = settings?.supportPhone || '+62 812-3456-7890';
-
-  const [activeSection, setActiveSection] = useState('intro');
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   const handlePrint = () => {
     window.print();

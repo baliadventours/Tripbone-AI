@@ -753,6 +753,25 @@ export default function JoyTimeMobilePreset({
     );
   };
 
+  const activePromo = promoBanners[promoSlideIndex % promoBanners.length];
+
+  const activePromoGradient = useMemo(() => {
+    if (!activePromo) return `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`;
+    const dir = activePromo.gradientDirection || 'to-r';
+    const angleMap: Record<string, string> = {
+      'to-r': 'to right',
+      'to-br': 'to bottom right',
+      'to-b': 'to bottom',
+      'to-tr': 'to top right',
+      'to-l': 'to left'
+    };
+    const angle = angleMap[dir] || 'to right';
+    const from = activePromo.gradientFrom || primaryColor;
+    const via = activePromo.gradientVia ? `, ${activePromo.gradientVia}` : '';
+    const to = activePromo.gradientTo || secondaryColor;
+    return `linear-gradient(${angle}, ${from}${via}, ${to})`;
+  }, [activePromo, primaryColor, secondaryColor]);
+
   /* =========================================================================
      SUB-VIEW: DEDICATED BLOG SCREEN (IMG_3853.png)
      ========================================================================= */
@@ -815,7 +834,7 @@ export default function JoyTimeMobilePreset({
                 {/* Left Thumbnail */}
                 <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                   <SmartImage
-                    src={post.featuredImage || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=300&q=80'}
+                    src={post.featuredImage || (post as any).coverImage || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=300&q=80'}
                     alt={post.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     aspectRatio="auto"
@@ -931,24 +950,6 @@ export default function JoyTimeMobilePreset({
   /* =========================================================================
      PRIMARY VIEW: JOYTIME SUPER-APP MOBILE HOME (IMG_3849.png & IMG_3850.png)
      ========================================================================= */
-  const activePromo = promoBanners[promoSlideIndex % promoBanners.length];
-
-  const activePromoGradient = useMemo(() => {
-    if (!activePromo) return `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`;
-    const dir = activePromo.gradientDirection || 'to-r';
-    const angleMap: Record<string, string> = {
-      'to-r': 'to right',
-      'to-br': 'to bottom right',
-      'to-b': 'to bottom',
-      'to-tr': 'to top right',
-      'to-l': 'to left'
-    };
-    const angle = angleMap[dir] || 'to right';
-    const from = activePromo.gradientFrom || primaryColor;
-    const via = activePromo.gradientVia ? `, ${activePromo.gradientVia}` : '';
-    const to = activePromo.gradientTo || secondaryColor;
-    return `linear-gradient(${angle}, ${from}${via}, ${to})`;
-  }, [activePromo, primaryColor, secondaryColor]);
 
   return (
     <div className="bg-[#f8fafc] pb-4 space-y-5 text-left relative">

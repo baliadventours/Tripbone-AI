@@ -6,6 +6,7 @@ import { getCloudflareImageUrl, type CloudflareTransformOptions } from '../lib/c
 
 interface SmartImageProps extends CloudflareTransformOptions {
   src?: string;
+  fallbackSrc?: string;
   alt: string;
   className?: string;
   containerClassName?: string;
@@ -21,6 +22,7 @@ const isHighPerformanceCDN = (url: string) => {
   if (!url) return true;
   return (
     url.includes('images.unsplash.com') ||
+    url.includes('picsum.photos') ||
     url.includes('lh3.googleusercontent.com') ||
     url.includes('googleusercontent.com') ||
     url.startsWith('/') ||
@@ -59,6 +61,7 @@ const getOptimizedImageUrl = (src: string, width?: number, height?: number, qual
 
 export default function SmartImage({
   src,
+  fallbackSrc,
   alt,
   className,
   containerClassName,
@@ -70,9 +73,11 @@ export default function SmartImage({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
+  const [useSecondaryFallback, setUseSecondaryFallback] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const cleanSrc = src ? sanitizeImageUrl(src) : undefined;
+  const cleanFallbackSrc = fallbackSrc ? sanitizeImageUrl(fallbackSrc) : undefined;
 
   const shouldSkipCloudflare = (url: string) => {
     if (!url) return true;
@@ -81,7 +86,8 @@ export default function SmartImage({
 
   // Determine the best source URL to render initially
   const getInitialSrc = () => {
-    if (!cleanSrc) return undefined;
+    if (useSecondaryFallback && cleanFallbackSrc) return cleanFallbackSrc;
+    if (!cleanSrc) return cleanFallbackSrc;
     if (useFallback) return cleanSrc;
     
     // Choose a default safe max width depending on aspectRatio if not specified
@@ -99,11 +105,12 @@ export default function SmartImage({
     setIsLoaded(false);
     setError(false);
     setUseFallback(false);
-  }, [cleanSrc]);
+    setUseSecondaryFallback(false);
+  }, [cleanSrc, cleanFallbackSrc]);
 
   // Handle cached images and image-load timeout safeties
   useEffect(() => {
-    if (!cleanSrc || !currentSrc) return;
+    if ((!cleanSrc && !cleanFallbackSrc) || !currentSrc) return;
 
     // If already complete (from cache), load instantly to avoid showing skeleton
     if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
@@ -119,16 +126,18 @@ export default function SmartImage({
     }, 15000);
 
     return () => clearTimeout(timer);
-  }, [currentSrc, isLoaded, useFallback, cleanSrc]);
+  }, [currentSrc, isLoaded, useFallback, cleanSrc, cleanFallbackSrc]);
 
   const handleLoad = () => {
     setIsLoaded(true);
   };
 
   const handleError = () => {
-    if (!useFallback && currentSrc && currentSrc !== cleanSrc) {
+    if (!useFallback && currentSrc && cleanSrc && currentSrc !== cleanSrc) {
       // If our optimized proxy URL failed, fall back to the original source URL
       setUseFallback(true);
+    } else if (!useSecondaryFallback && cleanFallbackSrc && currentSrc !== cleanFallbackSrc) {
+      setUseSecondaryFallback(true);
     } else {
       setError(true);
     }
@@ -143,7 +152,7 @@ export default function SmartImage({
     standard: 'aspect-[4/3]'
   };
 
-  if (!cleanSrc) {
+  if (!cleanSrc && !cleanFallbackSrc) {
     return (
       <div className={cn(
         "relative overflow-hidden bg-gray-100 flex flex-col items-center justify-center text-gray-400 p-4 text-center",

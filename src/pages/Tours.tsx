@@ -194,15 +194,6 @@ export default function Tours() {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  if (pageData && pageData.content) {
-    return (
-      <DynamicPageLayout
-        fallbackTitle="Tours Directory"
-        {...pageData}
-      />
-    );
-  }
-
   useEffect(() => {
     // Sync with URL params
     const q = searchParams.get('search');
@@ -316,6 +307,15 @@ export default function Tours() {
       }
     });
   }, [tours, searchTerm, selectedCategory, selectedLocation, priceRange, sortBy, categoryMap, locationMap]);
+
+  if (pageData && pageData.content) {
+    return (
+      <DynamicPageLayout
+        fallbackTitle="Tours Directory"
+        {...pageData}
+      />
+    );
+  }
 
   const destinationRegionName = settings?.destinationRegion || (locations.length > 0 ? locations[0].name : 'All Districts');
 

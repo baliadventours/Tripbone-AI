@@ -301,13 +301,13 @@ export default function BlogPostDetail() {
         <link rel="canonical" href={window.location.href} />
         <meta property="og:title" content={blogTitle} />
         <meta property="og:description" content={seoDescription} />
-        <meta property="og:image" content={post.featuredImage || settings?.ogImage || settings?.heroImage || settings?.logoURL || "https://i.ibb.co.com/pvLCVYkM/ALAS-HARUM8-optimized.webp"} />
+        <meta property="og:image" content={post.featuredImage || (post as any).coverImage || settings?.ogImage || settings?.heroImage || settings?.logoURL || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80"} />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={blogTitle} />
         <meta name="twitter:description" content={seoDescription} />
-        <meta name="twitter:image" content={post.featuredImage || settings?.ogImage || settings?.heroImage || settings?.logoURL || "https://i.ibb.co.com/pvLCVYkM/ALAS-HARUM8-optimized.webp"} />
+        <meta name="twitter:image" content={post.featuredImage || (post as any).coverImage || settings?.ogImage || settings?.heroImage || settings?.logoURL || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80"} />
         {blogSchema && (
           <script
             type="application/ld+json"
@@ -352,12 +352,17 @@ export default function BlogPostDetail() {
               <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
                 <Icons.Calendar className="h-4 w-4 text-primary" />
                 <span className="text-gray-900">
-                  {post.publishedAt?.toDate ? post.publishedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                  {(() => {
+                    const val: any = post.publishedAt || post.createdAt || (post as any).updatedAt;
+                    if (!val) return 'Recent';
+                    const d = typeof val.toDate === 'function' ? val.toDate() : typeof val.seconds === 'number' ? new Date(val.seconds * 1000) : new Date(val);
+                    return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recent';
+                  })()}
                 </span>
               </div>
               <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
                 <Icons.Clock className="h-4 w-4 text-primary" />
-                <span className="text-gray-900">3:08 pm</span>
+                <span className="text-gray-900">{(post as any).readTime || '5 min read'}</span>
               </div>
               <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
                 <Icons.MessageCircle className="h-4 w-4 text-primary" />
@@ -376,7 +381,8 @@ export default function BlogPostDetail() {
             <div className="space-y-12">
               <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-2xl shadow-gray-200">
                 <SmartImage 
-                  src={post.featuredImage || 'https://picsum.photos/seed/featured/1200/800'} 
+                  src={post.featuredImage || (post as any).coverImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80'} 
+                  fallbackSrc="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80"
                   alt={post.title}
                   aspectRatio="video"
                   width={1200}
@@ -520,7 +526,12 @@ export default function BlogPostDetail() {
                         {rPost.title}
                       </h4>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                        {rPost.publishedAt?.toDate ? rPost.publishedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recent'}
+                        {(() => {
+                          const val: any = rPost.publishedAt || rPost.createdAt || (rPost as any).updatedAt;
+                          if (!val) return 'Recent';
+                          const d = typeof val.toDate === 'function' ? val.toDate() : typeof val.seconds === 'number' ? new Date(val.seconds * 1000) : new Date(val);
+                          return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recent';
+                        })()}
                       </p>
                     </Link>
                   ))}
