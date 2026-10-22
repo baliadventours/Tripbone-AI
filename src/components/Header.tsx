@@ -84,18 +84,22 @@ export default function Header() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setProfile(docSnap.data() as UserProfile);
-        } else {
-          // New user registration
+        } else if (
+          window.location.pathname !== '/login' &&
+          window.location.pathname !== '/signup' &&
+          window.location.pathname !== '/register'
+        ) {
+          // Fallback user registration if not currently on Auth page
           const newProfile: Partial<UserProfile> & { tenantId?: string | null } = {
             uid: authUser.uid,
             email: authUser.email || '',
             displayName: authUser.displayName || '',
             photoURL: authUser.photoURL || '',
             role: 'customer',
-            tenantId: tenantId || null,
+            tenantId: tenantId || tenant?.id || null,
             createdAt: serverTimestamp(),
           };
-          await setDoc(docRef, newProfile);
+          await setDoc(docRef, newProfile, { merge: true });
           setProfile(newProfile as UserProfile);
         }
       } else {
@@ -103,7 +107,7 @@ export default function Header() {
       }
     });
     return unsubscribe;
-  }, []);
+  }, [tenantId, tenant?.id]);
 
   const [notifications, setNotifications] = useState<any[]>([]);
 
@@ -689,7 +693,7 @@ export default function Header() {
                ) : (
                  <>
                    <Link to="/login" className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 px-4">Sign in</Link>
-                   <Link to="/login" className="px-5 py-2 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl shadow-primary/10 transition-all">Register</Link>
+                   <Link to="/signup" className="px-5 py-2 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl shadow-primary/10 transition-all">Register</Link>
                  </>
                )}
             </div>

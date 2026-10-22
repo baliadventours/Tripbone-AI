@@ -9,11 +9,11 @@ import {
   signInWithCustomToken,
   sendEmailVerification
 } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
+import { auth, db, getActiveTenantId } from '../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, query, collection, where, getDocs, deleteDoc } from '@/src/lib/firebase';
 import { Mail, Lock, User, ArrowRight, Github, Chrome, Apple, Eye, EyeOff, Loader2, Sparkles, CheckCircle2, MessageSquare, Globe, ShieldCheck, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, getSafeImageUrl } from '../lib/utils';
 import { useSettings } from '../lib/SettingsContext';
 import { useTenant } from '../lib/TenantContext';
 import { CountryPhoneInput, CountryPhoneValue } from '../components/UI/CountryPhoneInput';
@@ -23,8 +23,24 @@ type AuthMode = 'signin' | 'signup' | 'forgot';
 
 export default function Auth() {
   const { settings } = useSettings();
-  const { tenantId, tenant, isAppGate, isImpersonating } = useTenant();
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const { tenantId, tenant, isMaster, isAppGate, isImpersonating } = useTenant();
+  const activeTenantId = tenantId || tenant?.id || getActiveTenantId() || null;
+  const siteName = settings?.siteName || tenant?.companyName || (isMaster ? 'Tripbone' : 'Main Site');
+  const logoURL = settings?.logoURL || tenant?.logo;
+
+  const [mode, setMode] = useState<AuthMode>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (
+        window.location.pathname === '/signup' ||
+        window.location.pathname === '/register' ||
+        params.get('mode') === 'signup'
+      ) {
+        return 'signup';
+      }
+    }
+    return 'signin';
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -94,6 +110,19 @@ export default function Auth() {
       navigate('/admin', { replace: true });
     }
   }, [isImpersonating, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (
+      location.pathname === '/signup' ||
+      location.pathname === '/register' ||
+      params.get('mode') === 'signup'
+    ) {
+      setMode('signup');
+    } else if (location.pathname === '/login' && !params.get('mode')) {
+      setMode('signin');
+    }
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -240,10 +269,10 @@ export default function Auth() {
               displayName: user.displayName || (migratedData as any)?.displayName || 'Traveler',
               photoURL: user.photoURL || (migratedData as any)?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'T')}&background=random`,
               role: (migratedData as any)?.role || (isSuperAdminEmail ? 'superadmin' : 'customer'),
-              tenantId: tenantId || null,
+              tenantId: activeTenantId,
               createdAt: (migratedData as any)?.createdAt || serverTimestamp(),
               updatedAt: serverTimestamp(),
-            });
+            }, { merge: true });
           } catch (mergeError) {
             console.error("[Auth] Social login merge failed:", mergeError);
             const isSuperAdminEmail = ['baliadventours@gmail.com', 'admin@tripbone.com', 'kuotabox@gmail.com'].includes(user.email?.toLowerCase() || '');
@@ -254,10 +283,10 @@ export default function Auth() {
               displayName: user.displayName || 'Traveler',
               photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'T')}&background=random`,
               role: isSuperAdminEmail ? 'superadmin' : 'customer',
-              tenantId: tenantId || null,
+              tenantId: activeTenantId,
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
-            });
+            }, { merge: true });
           }
         }
         
@@ -274,27 +303,28 @@ export default function Auth() {
           userRole = 'admin';
           await setDoc(profileRef, {
             role: 'admin',
-            tenantId: tenantId || tenant?.id || null,
+            tenantId: activeTenantId,
             updatedAt: serverTimestamp()
           }, { merge: true });
-        } else if (!userTenantId && tenantId && !isSuperAdminEmail) {
+        } else if (activeTenantId && !isSuperAdminEmail && (!userTenantId || userRole === 'customer')) {
           await setDoc(profileRef, {
-            tenantId: tenantId,
+            tenantId: activeTenantId,
             updatedAt: serverTimestamp()
           }, { merge: true });
+          userTenantId = activeTenantId;
         }
 
-        // Enforce tenant boundary on Google sign-in only for explicit cross-tenant mismatches
-        if (!isAppGate && !isSuperAdminEmail && !isTenantOwner && tenantId && userTenantId) {
-          const matchesTenant = userTenantId === tenantId || userTenantId === tenant?.id || userTenantId === tenant?.slug;
+        // Enforce tenant boundary on Google sign-in only for non-customer staff/admin accounts from another workspace
+        if (!isAppGate && !isSuperAdminEmail && !isTenantOwner && userRole !== 'customer' && activeTenantId && userTenantId) {
+          const matchesTenant = userTenantId === activeTenantId || userTenantId === tenant?.id || userTenantId === tenant?.slug;
           if (!matchesTenant) {
             await auth.signOut();
-            throw new Error('This account is associated with another store workspace. Please sign in on your dedicated workspace.');
+            throw new Error('This staff/operator account is associated with another store workspace. Please sign in on your dedicated workspace.');
           }
         }
 
         let targetPath = from;
-        if (from === '/' || from === '/login') {
+        if (from === '/' || from === '/login' || from === '/signup' || from === '/register') {
           if (userRole === 'admin' || userRole === 'staff' || isTenantOwner) targetPath = '/admin';
           else if (userRole === 'superadmin' || isSuperAdminEmail) targetPath = '/superadmin';
           else if (userRole === 'supplier') targetPath = '/supplier';
@@ -423,7 +453,8 @@ export default function Auth() {
               displayName: fullName || (migratedData as any)?.displayName || 'Traveler',
               photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName || (migratedData as any)?.displayName || 'T')}&background=random`,
               role: isTenantOwner ? 'admin' : ((migratedData as any)?.role || (isSuperAdminEmail ? 'superadmin' : 'customer')),
-              tenantId: tenantId || null,
+              tenantId: activeTenantId,
+              status: 'active',
               phoneNumber: phoneData.phone || '',
               whatsapp: phoneData.whatsapp || phoneData.phone || '',
               country: phoneData.country || 'Indonesia',
@@ -431,7 +462,7 @@ export default function Auth() {
               dialCode: phoneData.dialCode || '+62',
               createdAt: (migratedData as any)?.createdAt || serverTimestamp(),
               updatedAt: serverTimestamp(),
-            });
+            }, { merge: true });
           } catch (mergeError) {
             console.error("[Auth] Merging failed, falling back to clean signup:", mergeError);
             const isSuperAdminEmail = ['baliadventours@gmail.com', 'admin@tripbone.com', 'kuotabox@gmail.com'].includes(user.email?.toLowerCase() || '');
@@ -444,7 +475,8 @@ export default function Auth() {
               displayName: fullName || 'Traveler',
               photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName || 'T')}&background=random`,
               role: isTenantOwner ? 'admin' : (isSuperAdminEmail ? 'superadmin' : 'customer'),
-              tenantId: tenantId || null,
+              tenantId: activeTenantId,
+              status: 'active',
               phoneNumber: phoneData.phone || '',
               whatsapp: phoneData.whatsapp || phoneData.phone || '',
               country: phoneData.country || 'Indonesia',
@@ -452,27 +484,7 @@ export default function Auth() {
               dialCode: phoneData.dialCode || '+62',
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
-            });
-          }
-
-          // --- Send Tripbone Branded Welcome & Verification Emails via Resend ---
-          try {
-            const baseHost = window.location.origin;
-            fetch(`${baseHost}/api/mail/welcome`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: user.email, name: fullName || 'Traveler' })
-            }).catch(e => console.warn('[Resend] Welcome fail', e));
-            
-            fetch(`${baseHost}/api/mail/verify`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: user.email })
-            }).catch(e => console.warn('[Resend] Verify fail', e));
-
-            sendEmailVerification(user).catch(e => console.warn('[Firebase Auth] sendEmailVerification notice:', e));
-          } catch (mailError) {
-            console.warn('[Auth] Failed to send welcome/verification emails:', mailError);
+            }, { merge: true });
           }
 
           const isSuperAdminEmail = ['baliadventours@gmail.com', 'admin@tripbone.com', 'kuotabox@gmail.com'].includes(user.email?.toLowerCase() || '');
@@ -480,7 +492,7 @@ export default function Auth() {
           const userRole: any = isTenantOwner ? 'admin' : (isSuperAdminEmail ? 'superadmin' : 'customer');
 
           let targetPath = from;
-          if (from === '/' || from === '/login') {
+          if (from === '/' || from === '/login' || from === '/signup' || from === '/register') {
             if (userRole === 'admin' || userRole === 'staff' || isTenantOwner) targetPath = '/admin';
             else if (userRole === 'superadmin' || isSuperAdminEmail) targetPath = '/superadmin';
             else if (userRole === 'supplier') targetPath = '/supplier';
@@ -488,13 +500,8 @@ export default function Auth() {
             else targetPath = '/customer/dashboard';
           }
 
-          // If not superadmin, halt and show the Email Verification Gate
-          if (!isSuperAdminEmail && userRole !== 'superadmin') {
-            setPendingRedirectTarget(targetPath);
-            setAwaitingVerificationEmail(user.email || email);
-            setResendCooldown(60);
-            return;
-          }
+          navigate(targetPath, { replace: true });
+          return;
         } else {
           // Double-check if the profile document exists in Firestore on Email Signin
           try {
@@ -529,17 +536,17 @@ export default function Auth() {
                 displayName: existingDisplayName,
                 photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(existingDisplayName)}&background=random`,
                 role: existingRole,
-                tenantId: existingData.tenantId || tenantId || null,
+                tenantId: existingData.tenantId || activeTenantId,
                 createdAt: existingData.createdAt || serverTimestamp(),
                 updatedAt: serverTimestamp(),
-              });
+              }, { merge: true });
             } else if (isTenantOwner) {
               // Ensure tenant owner always has role admin and correct tenantId
               const pData = profileSnap.data();
               if (pData?.role !== 'admin' || !pData?.tenantId) {
                 await setDoc(doc(db, 'users', user.uid), {
                   role: 'admin',
-                  tenantId: tenantId || tenant?.id || null,
+                  tenantId: activeTenantId,
                   updatedAt: serverTimestamp()
                 }, { merge: true });
               }
@@ -561,26 +568,27 @@ export default function Auth() {
           userRole = 'admin';
           await setDoc(doc(db, 'users', user.uid), {
             role: 'admin',
-            tenantId: tenantId || tenant?.id || null,
+            tenantId: activeTenantId,
             updatedAt: serverTimestamp()
           }, { merge: true });
-        } else if (!userTenantId && tenantId && !isSuperAdminEmail) {
+        } else if (activeTenantId && !isSuperAdminEmail && (!userTenantId || userRole === 'customer')) {
           await setDoc(doc(db, 'users', user.uid), {
-            tenantId: tenantId,
+            tenantId: activeTenantId,
             updatedAt: serverTimestamp()
           }, { merge: true });
+          userTenantId = activeTenantId;
         }
 
-        // Enforce tenant boundary on email sign-in only for explicit cross-tenant mismatches
-        if (!isAppGate && !isSuperAdminEmail && !isTenantOwner && tenantId && userTenantId) {
-          const matchesTenant = userTenantId === tenantId || userTenantId === tenant?.id || userTenantId === tenant?.slug;
+        // Enforce tenant boundary on email sign-in only for non-customer staff/admin accounts from another workspace
+        if (!isAppGate && !isSuperAdminEmail && !isTenantOwner && userRole !== 'customer' && activeTenantId && userTenantId) {
+          const matchesTenant = userTenantId === activeTenantId || userTenantId === tenant?.id || userTenantId === tenant?.slug;
           if (!matchesTenant) {
             await auth.signOut();
-            throw new Error('This account is associated with another store workspace. Please sign in on your dedicated workspace.');
+            throw new Error('This staff/operator account is associated with another store workspace. Please sign in on your dedicated workspace.');
           }
         }
 
-        if (from === '/' || from === '/login') {
+        if (from === '/' || from === '/login' || from === '/signup' || from === '/register') {
           if (userRole === 'admin' || userRole === 'staff' || isTenantOwner) navigate('/admin', { replace: true });
           else if (userRole === 'superadmin' || isSuperAdminEmail) navigate('/superadmin', { replace: true });
           else if (userRole === 'supplier') navigate('/supplier', { replace: true });
@@ -635,16 +643,16 @@ export default function Auth() {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 sm:p-6 text-slate-900 font-sans antialiased">
       {/* Brand Header */}
       <Link to="/" className="flex items-center gap-2.5 group mb-8 transition-transform hover:scale-105">
-        {settings?.logoURL ? (
-          <img src={settings.logoURL} alt={settings.siteName} className="h-12 md:h-14 w-auto object-contain" />
+        {logoURL ? (
+          <img src={getSafeImageUrl(logoURL)} alt={siteName} className="h-12 md:h-14 w-auto object-contain" referrerPolicy="no-referrer" />
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-md">
-              T
+              {siteName.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col text-left">
-              <span className="text-xl font-black text-slate-900 tracking-tight leading-none">Tripbone</span>
-              <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-widest mt-0.5">Operator OS</span>
+              <span className="text-xl font-black text-slate-900 tracking-tight leading-none">{siteName}</span>
+              <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-widest mt-0.5">Official Storefront</span>
             </div>
           </div>
         )}
@@ -802,12 +810,45 @@ export default function Auth() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
+              {mode !== 'forgot' && (
+                <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mb-6">
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('signin')}
+                    className={cn(
+                      "py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                      mode === 'signin'
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    )}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('signup')}
+                    className={cn(
+                      "py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                      mode === 'signup'
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    )}
+                  >
+                    Create Account
+                  </button>
+                </div>
+              )}
+
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-black text-slate-900 mb-1.5 tracking-tight">
-                  {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create your operator account' : 'Reset password'}
+                  {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create your account' : 'Reset password'}
                 </h1>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  {mode === 'signin' ? 'Sign in to access your tour operations cockpit' : mode === 'signup' ? 'Start your 7-day free trial with zero commissions' : "Enter your email address to receive a secure reset link"}
+                  {mode === 'signin'
+                    ? `Sign in to your ${siteName} account to manage your bookings and trips`
+                    : mode === 'signup'
+                    ? `Register with ${siteName} to book tours, save wishlists, and track your adventures`
+                    : 'Enter your email address to receive a secure reset link'}
                 </p>
               </div>
 
@@ -857,7 +898,7 @@ export default function Auth() {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none transition-all text-slate-900 font-medium"
-                          placeholder="Captain John Doe"
+                          placeholder="John Doe"
                         />
                       </div>
                     </div>
@@ -873,7 +914,7 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none transition-all text-slate-900 font-medium"
-                        placeholder="operator@company.com"
+                        placeholder="you@example.com"
                       />
                     </div>
                   </div>
@@ -962,7 +1003,7 @@ export default function Auth() {
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <>
-                        <span>{mode === 'signin' ? 'Sign in to Dashboard' : mode === 'signup' ? 'Create Free Account' : 'Send Reset Link'}</span>
+                        <span>{mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'}</span>
                         <ArrowRight className="h-4 w-4" />
                       </>
                     )}
@@ -1002,16 +1043,18 @@ export default function Auth() {
 
             <div className="mt-6 text-center">
               <p className="text-slate-500 text-xs">
-                {mode === 'signin' ? "Don't have a workspace yet?" : "Already have an account?"}{' '}
+                {mode === 'signin' ? "Don't have an account yet?" : "Already have an account?"}{' '}
                 <button 
+                  type="button"
                   onClick={() => handleModeChange(mode === 'signin' ? 'signup' : 'signin')}
                   className="text-emerald-600 font-bold hover:underline cursor-pointer"
                 >
-                  {mode === 'signin' ? 'Start Free Trial' : 'Sign In'}
+                  {mode === 'signin' ? 'Create Account' : 'Sign In'}
                 </button>
               </p>
               {mode === 'forgot' && (
                 <button 
+                  type="button"
                   onClick={() => setMode('signin')}
                   className="mt-2 text-slate-400 text-xs font-medium hover:text-emerald-600 cursor-pointer"
                 >
@@ -1024,8 +1067,8 @@ export default function Auth() {
       </div>
       )}
 
-      <Link to="/" className="mt-6 text-slate-400 text-xs font-medium hover:text-slate-700 transition-colors">
-        ← Back to Tripbone Platform
+      <Link to="/" className="mt-6 text-slate-500 text-xs font-semibold hover:text-slate-800 transition-colors">
+        ← Back to {siteName}
       </Link>
     </div>
   );

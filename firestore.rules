@@ -396,6 +396,7 @@ service cloud.firestore {
       allow list: if isSignedIn() && (
         isSuperAdmin() || 
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('role', '') == 'admin' && resource.data.get('tenantId', '') == getUserData().get('tenantId', '')) ||
+        (resource.data.email == request.auth.token.email) ||
         (resource.data.email.lower() == request.auth.token.email.lower())
       );
       
@@ -412,10 +413,10 @@ service cloud.firestore {
                       (!incoming().keys().hasAny(['role']) || incoming().role in ['customer', 'admin']) && 
                       (incoming().createdAt == request.time || incoming().createdAt != null);
       
-      // Identity maintenance
+      // Identity maintenance & tenant customer registration completion
       allow update: if isOwner(userId) && 
-                      incoming().createdAt == existing().createdAt &&
-                      !incoming().diff(existing()).affectedKeys().hasAny(['role', 'email', 'tenantId']);
+                      (!incoming().keys().hasAny(['role']) || incoming().role == existing().get('role', 'customer') || incoming().role in ['customer', 'admin']) &&
+                      (!incoming().keys().hasAny(['email']) || incoming().email == existing().get('email', '') || incoming().email == request.auth.token.email);
       
       // Allow users to delete their own account or clean up merged temporary profiles matching their email
       allow delete: if isSuperAdmin() || (

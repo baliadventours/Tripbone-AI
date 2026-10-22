@@ -3,10 +3,17 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, ShieldCheck, ArrowRight, ArrowLeft, KeyRound, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react';
 import { getActiveTenantId } from '../lib/firebase';
+import { useSettings } from '../lib/SettingsContext';
+import { useTenant } from '../lib/TenantContext';
+import { getSafeImageUrl } from '../lib/utils';
 
 type ResetStep = 'request' | 'verify' | 'success';
 
 export default function ForgotPassword() {
+  const { settings } = useSettings();
+  const { tenant, isMaster } = useTenant();
+  const siteName = settings?.siteName || tenant?.companyName || (isMaster ? 'Tripbone' : 'Main Site');
+  const logoURL = settings?.logoURL || tenant?.logo;
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState<ResetStep>('request');
   const [email, setEmail] = useState(() => (searchParams.get('email') || '').trim());
@@ -113,13 +120,19 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#f8fafc] text-slate-900 font-sans antialiased">
       {/* Brand Header */}
       <Link to="/" className="flex items-center gap-2.5 group mb-8 transition-transform hover:scale-105">
-        <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-md">
-          T
-        </div>
-        <div className="flex flex-col text-left">
-          <span className="text-xl font-black text-slate-900 tracking-tight leading-none">Tripbone</span>
-          <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-widest mt-0.5">Password Recovery</span>
-        </div>
+        {logoURL ? (
+          <img src={getSafeImageUrl(logoURL)} alt={siteName} className="h-12 md:h-14 w-auto object-contain" referrerPolicy="no-referrer" />
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-md">
+              {siteName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-xl font-black text-slate-900 tracking-tight leading-none">{siteName}</span>
+              <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-widest mt-0.5">Password Recovery</span>
+            </div>
+          </div>
+        )}
       </Link>
 
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 sm:p-9 shadow-2xl transition-all">
@@ -176,7 +189,7 @@ export default function ForgotPassword() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none transition-all text-slate-900 font-medium"
-                      placeholder="operator@company.com"
+                      placeholder="you@example.com"
                     />
                   </div>
                 </div>
@@ -316,7 +329,7 @@ export default function ForgotPassword() {
                 Password Reset Successfully!
               </h1>
               <p className="text-slate-500 text-xs leading-relaxed px-4 mb-8">
-                Your password has been changed. You can now use your new credentials to sign in to your operations dashboard.
+                Your password has been changed. You can now use your new credentials to sign in to your account.
               </p>
 
               <button 
@@ -332,8 +345,8 @@ export default function ForgotPassword() {
         </AnimatePresence>
       </div>
 
-      <Link to="/" className="mt-6 text-slate-400 text-xs font-medium hover:text-slate-700 transition-colors">
-        ← Back to Tripbone Platform
+      <Link to="/" className="mt-6 text-slate-500 text-xs font-semibold hover:text-slate-800 transition-colors">
+        ← Back to {siteName}
       </Link>
     </div>
   );

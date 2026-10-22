@@ -105,7 +105,7 @@ function AppContent() {
   const isAdmin = location.pathname.startsWith('/admin');
   const isSupplier = location.pathname.startsWith('/supplier');
   const isAgent = location.pathname.startsWith('/agent');
-  const isAuth = location.pathname === '/login' || location.pathname === '/forgot-password';
+  const isAuth = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/register' || location.pathname === '/forgot-password' || location.pathname === '/verify-email' || location.pathname === '/auth/action';
   const isDashboard = location.pathname.startsWith('/customer');
   const isCheckout = location.pathname.startsWith('/checkout');
   const isTourDetail = location.pathname.startsWith('/tour/') || (location.pathname.startsWith('/tours/') && location.pathname !== '/tours');
@@ -248,6 +248,7 @@ function AppContent() {
               <Route path="/superadmin/*" element={<SaaSSuperAdmin />} />
               <Route path="/login" element={<SaaSHome />} />
               <Route path="/signup" element={<SaaSHome />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/auth/action" element={<VerifyEmail />} />
               <Route path="/redeem" element={<AppSumoRedeem />} />
@@ -486,7 +487,11 @@ function AppContent() {
           <Suspense fallback={<Loader />}>
             <Routes>
               <Route path="/login" element={<Auth />} />
+              <Route path="/signup" element={<Auth />} />
+              <Route path="/register" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/auth/action" element={<VerifyEmail />} />
               <Route path="/customer" element={<DashboardLayout />}>
                 <Route path="dashboard" element={<Overview />} />
                 <Route path="bookings" element={<Bookings />} />
