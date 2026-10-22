@@ -9070,8 +9070,12 @@ export default function SaaSSuperAdmin() {
                             const dateStr = lead.createdAt 
                               ? new Date(lead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
                               : 'Unknown';
-                            const phoneVal = lead.phoneNumber || '';
-                            const waUrl = getWhatsAppUrl(phoneVal, `Hi ${lead.name || 'there'}! Thank you for requesting the Tripbone SaaS demo for ${lead.companyName || 'your tour agency'}. Are you available for a quick chat?`);
+                            const phoneVal = lead.phone || lead.whatsapp || lead.phoneNumber || '';
+                            const isMigrationLead = lead.source === 'free_24h_ota_migration' || Boolean(lead.sourceUrl);
+                            const waMessage = isMigrationLead
+                              ? `Hi ${lead.name || 'there'}! We received your Free 24h Migration request for ${lead.companyName || 'your tour business'} (${lead.sourceUrl || ''}). We are setting up your preview storefront now!`
+                              : `Hi ${lead.name || 'there'}! Thank you for requesting the Tripbone SaaS demo for ${lead.companyName || 'your tour agency'}. Are you available for a quick chat?`;
+                            const waUrl = getWhatsAppUrl(phoneVal, waMessage);
                             const currentStatus = lead.status || 'new';
 
                             return (
@@ -9085,6 +9089,17 @@ export default function SaaSSuperAdmin() {
                                       <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{lead.name || 'Anonymous Lead'}</div>
                                       {lead.companyName && (
                                         <div className="text-[11px] text-indigo-400 font-medium">{lead.companyName}</div>
+                                      )}
+                                      {lead.sourceUrl && (
+                                        <a
+                                          href={lead.sourceUrl.startsWith('http') ? lead.sourceUrl : `https://${lead.sourceUrl}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-[10px] font-mono text-emerald-500 hover:underline inline-flex items-center gap-1 mt-0.5"
+                                        >
+                                          <span>24h Migration: {lead.sourceUrl}</span>
+                                          <ExternalLink className="w-2.5 h-2.5" />
+                                        </a>
                                       )}
                                     </div>
                                   </div>
@@ -9114,7 +9129,7 @@ export default function SaaSSuperAdmin() {
                                 </td>
                                 <td className="py-4 px-6">
                                   <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>
-                                    {lead.monthlyBookings ? `${lead.monthlyBookings} tours/mo` : 'Standard'}
+                                    {lead.fleetType ? `Migration (${lead.fleetType})` : lead.monthlyBookings ? `${lead.monthlyBookings} tours/mo` : 'Standard'}
                                   </span>
                                 </td>
                                 <td className="py-4 px-6">

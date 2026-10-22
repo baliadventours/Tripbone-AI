@@ -14,7 +14,8 @@ import {
   X, ChevronDown, ChevronUp, Layers, ExternalLink,
   Rocket, Zap, Smartphone, Bot, TrendingUp, Star,
   CheckCircle2, ShieldAlert, Database, Triangle,
-  Search, Bell, MapPin, Filter, ChevronLeft, Clock
+  Search, Bell, MapPin, Filter, ChevronLeft, Clock,
+  Car, ShieldCheck
 } from 'lucide-react';
 import { 
   trackPostHogMarketingCTA, 
@@ -79,6 +80,54 @@ export default function SaaSMarketing() {
     };
   });
   const [submittingLead, setSubmittingLead] = useState(false);
+
+  // Free 24-Hour Done-For-You OTA Migration Modal state
+  const [showMigrationModal, setShowMigrationModal] = useState(false);
+  const [migrationSuccess, setMigrationSuccess] = useState(false);
+  const [migrationLead, setMigrationLead] = useState({
+    name: '',
+    email: '',
+    companyName: '',
+    sourceUrl: '',
+    fleetType: 'both'
+  });
+
+  const handleMigrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!migrationLead.name || !migrationLead.email || !migrationLead.sourceUrl) return;
+    setSubmittingLead(true);
+    try {
+      trackPostHogDemoLeadSubmit({
+        name: migrationLead.name,
+        email: migrationLead.email,
+        phone: demoPhoneData.phone,
+        country: demoPhoneData.country,
+        companyName: migrationLead.companyName,
+        source: 'free_24h_ota_migration'
+      });
+      await addDoc(collection(db, 'demoLeads'), {
+        name: migrationLead.name.trim(),
+        email: migrationLead.email.trim(),
+        phone: demoPhoneData.phone || '',
+        whatsapp: demoPhoneData.whatsapp || demoPhoneData.phone || '',
+        country: demoPhoneData.country || 'Unknown',
+        countryCode: demoPhoneData.countryCode || '',
+        dialCode: demoPhoneData.dialCode || '',
+        companyName: migrationLead.companyName.trim() || 'Migration Request',
+        sourceUrl: migrationLead.sourceUrl.trim(),
+        fleetType: migrationLead.fleetType,
+        status: 'new',
+        source: 'free_24h_ota_migration',
+        createdAt: new Date().toISOString()
+      });
+      setMigrationSuccess(true);
+    } catch (err) {
+      console.error("Error saving migration request:", err);
+      setMigrationSuccess(true);
+    } finally {
+      setSubmittingLead(false);
+    }
+  };
 
   const handleWatchDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,27 +282,31 @@ export default function SaaSMarketing() {
     loadShowcases();
   }, []);
 
-  // FAQ contents as structured in the wireframe
+  // High-converting FAQs addressing paid ad & operator objections
   const faqs = [
     { 
-      q: "Do I need technical skills to use Tripbone?", 
-      a: "No, Tripbone is built for non-technical tour operators. AI handles everything — website creation, content writing, and setup." 
+      q: "Can you migrate my existing tours from Viator, GetYourGuide, or my old website?", 
+      a: "Yes! With Tripbone's 1-Click OTA Importer, you can paste any Viator, GetYourGuide, or website URL to extract your photos, itineraries, inclusions, and pricing in seconds. Or request our Free 24-Hour Done-For-You Migration and our team will set up your top 5 tours for you." 
     },
     { 
-      q: "How long does it take to launch?", 
-      a: "Less than 2 minutes. Our AI website generator builds and provisions your entire site instantly." 
+      q: "How does Tripbone compare to FareHarbor, Bokun, or Rezdy?", 
+      a: "FareHarbor charges up to 6% booking fees and holds your payouts, while Bokun and Rezdy charge monthly fees plus transaction cuts and only give you embeddable widgets. Tripbone charges 0% commission, gives you a complete high-converting luxury website + booking engine, and sends 100% of funds directly to your own payment gateway." 
     },
     { 
-      q: "Can I use my own domain?", 
-      a: "Yes, you can easily map your custom domain (e.g., mytours.com) to your Tripbone site." 
+      q: "Can I sell both Tours and Car Rentals / Private Drivers on the same site?", 
+      a: "Yes. Tripbone is the only platform with a native Tour & Activity Engine and a dedicated Car Rental & Charter Fleet Module (with self-drive or with-driver pricing, security deposits, and availability calendars) under one roof." 
     },
     { 
-      q: "What payment methods does Tripbone support?", 
-      a: "We support Stripe, PayPal, and offline/bank transfers out of the box." 
+      q: "What payment gateways does Tripbone support, and when do I get paid?", 
+      a: "Tripbone supports Bring-Your-Own-Payment-Gateway (BYOPG) with Stripe, Midtrans (QRIS, Virtual Accounts, Cards), Xendit, Razorpay, PayPal, Bank Transfer, and Pay on Arrival simultaneously. Every customer payment goes directly into your merchant account with 0% Tripbone cut." 
+    },
+    { 
+      q: "Why shouldn't I just build my own website with WordPress or AI coding tools?", 
+      a: "Building a landing page is easy, but maintaining live payment webhooks, multi-currency checkout, PDF voucher & invoice engines, digital liability waivers, OTA email extraction, and custom domain SSL takes months of engineering. Tripbone gives you an enterprise-grade, battle-tested operating system in 2 minutes so you can focus on running tours." 
     },
     { 
       q: "Is there a free trial available?", 
-      a: "Yes, we offer a 7-day free trial so you can experience everything Tripbone has to offer before committing." 
+      a: "Yes, every account starts with a full-featured 7-day free trial with no credit card required, or you can claim our Free 24-Hour Done-For-You Storefront Migration." 
     }
   ];
 
@@ -295,18 +348,20 @@ export default function SaaSMarketing() {
                 transition={{ duration: 0.5 }}
                 className="lg:col-span-7 space-y-6 text-left"
               >
-                {/* Pill: Website & Booking Engine */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-mono uppercase tracking-widest font-bold shadow-xs">
+                {/* Kicker: Direct Booking OS for Tours & Fleet */}
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Website & Booking Engine</span>
+                  <span>0% Commission Tour & Car Rental OS</span>
+                  <span className="text-slate-600" aria-hidden="true">·</span>
+                  <span className="text-slate-300">Direct Payouts</span>
                 </div>
 
                 {/* Headline */}
                 <h1 
-                  className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12] text-white"
+                  className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] text-white"
                   style={{ textWrap: 'balance' }}
                 >
-                  Build your AI powered tour website{' '}
+                  Stop losing 25% to OTAs. Launch your direct booking site{' '}
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
                     in 2 minutes.
                   </span>
@@ -317,11 +372,11 @@ export default function SaaSMarketing() {
                   className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal max-w-2xl"
                   style={{ textWrap: 'balance' }}
                 >
-                  Build tours with AI, answer guests with AI, and plan trips with AI. Automate WhatsApp, send proposals, import your OTA listings, and get paid through your own payment gateway. Zero commission.
+                  The all-in-one operating system for <strong className="text-white font-semibold">Tour Operators & Car Rental Fleets</strong>. Import your Viator or GetYourGuide listings in 1 click, collect 100% direct payouts via <strong className="text-white font-semibold">Stripe, Midtrans, Xendit, or PayPal</strong>, and automate WhatsApp tickets, digital waivers, and driver dispatch.
                 </p>
 
                 {/* CTA Action Buttons */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-3.5 pt-2">
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <button
                       onClick={() => {
@@ -333,37 +388,55 @@ export default function SaaSMarketing() {
                         });
                         navigate('/signup');
                       }}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm sm:text-base px-8 py-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm sm:text-base px-7 py-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      <span>Build my site in 2 minutes*</span>
+                      <span>Launch Free in 2 Minutes*</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
 
                     <button
                       onClick={() => {
-                        trackPostHogDemoModalOpen({ source: 'hero_top_button' });
-                        setShowDemoModal(true);
+                        trackPostHogMarketingCTA({
+                          ctaName: 'Free 24h OTA Migration (Hero)',
+                          location: 'hero_top_migration',
+                          destination: 'migration_modal',
+                          section: 'hero'
+                        });
+                        setMigrationSuccess(false);
+                        setShowMigrationModal(true);
                       }}
-                      className="bg-slate-800/80 hover:bg-slate-700/80 text-white font-semibold text-sm sm:text-base px-6 py-4 rounded-xl border border-slate-700/70 shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="bg-slate-800/90 hover:bg-slate-700/90 text-white font-bold text-sm sm:text-base px-6 py-4 rounded-xl border border-emerald-500/40 shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      <Play className="h-4 w-4 text-emerald-400 fill-current" />
-                      <span>See a live demo</span>
+                      <Sparkles className="h-4 w-4 text-emerald-400" />
+                      <span>Free 24h Viator / Site Migration</span>
                     </button>
                   </div>
 
-                  {/* Footnote / Asterisk explanation */}
-                  <p className="text-[11px] font-medium text-slate-400 font-mono">
-                    *) 7 Day Trial No Credit Card Required
-                  </p>
+                  {/* Secondary Demo Trigger & Footnote */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <p className="text-[11px] font-medium text-slate-400 font-mono">
+                      *) 7-Day Free Trial · No Credit Card Required · Cancel Anytime
+                    </p>
+                    <button
+                      onClick={() => {
+                        trackPostHogDemoModalOpen({ source: 'hero_top_button' });
+                        setShowDemoModal(true);
+                      }}
+                      className="text-xs font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1.5 underline underline-offset-4 cursor-pointer"
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      <span>Or watch interactive live demo</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Trust line */}
-                <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-xs text-slate-300 font-medium pt-2 border-t border-slate-800/80">
-                  <span className="text-emerald-400 font-bold">0% commission</span>
+                <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-xs text-slate-300 font-medium pt-3 border-t border-slate-800/80">
+                  <span className="text-emerald-400 font-bold">0% booking fee (unlike FareHarbor's 6%)</span>
                   <span className="text-slate-600" aria-hidden="true">·</span>
-                  <span>No credit card</span>
+                  <span>Tours + Car Rentals in 1 OS</span>
                   <span className="text-slate-600" aria-hidden="true">·</span>
-                  <span>Your data stays yours</span>
+                  <span>Instant Direct Bank Payouts</span>
                 </div>
               </motion.div>
 
@@ -529,16 +602,17 @@ export default function SaaSMarketing() {
                     </div>
                   </div>
 
-                  {/* OTA Comparison Cut Selector */}
+                  {/* OTA & Legacy Software Comparison Cut Selector */}
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-2">
-                      Standard OTA Commission Rate Avoided
+                      Commission or Booking Fee Rate Avoided
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
+                        { rate: 6, label: '6% (FareHarbor Fee)' },
                         { rate: 18, label: '18% (GetYourGuide)' },
-                        { rate: 20, label: '20% (Viator / Tripadvisor)' },
-                        { rate: 25, label: '25% (High Tier OTA)' }
+                        { rate: 20, label: '20% (Viator)' },
+                        { rate: 25, label: '25% (OTA Standard)' }
                       ].map((ota) => (
                         <button
                           key={ota.rate}
@@ -782,44 +856,44 @@ export default function SaaSMarketing() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
               {[
                 { 
-                  icon: Layout, 
-                  title: "AI Website Builder", 
-                  desc: "Generate your branded multi-page tour website in under 2 minutes with zero code." 
+                  icon: Zap, 
+                  title: "1-Click OTA & URL Import", 
+                  desc: "Paste your Viator, GetYourGuide, or old website URL and import your entire tour catalog, photos, and pricing in seconds." 
                 },
                 { 
-                  icon: Map, 
-                  title: "Gemini Tour Studio", 
-                  desc: "Create high-converting itinerary pages with AI copy, inclusions, and highlights." 
-                },
-                { 
-                  icon: Sparkles, 
-                  title: "Direct Booking Engine", 
-                  desc: "Real-time calendar scheduling, departure slots, and instant automated voucher generation." 
+                  icon: Car, 
+                  title: "Tours + Car Rental Fleet OS", 
+                  desc: "Sell daily excursions AND manage private drivers, car charters, and scooter rentals with custom deposits in one unified dashboard." 
                 },
                 { 
                   icon: CreditCard, 
-                  title: "Universal BYOPG", 
-                  desc: "Direct integration with Stripe, Midtrans, Xendit, Razorpay, and PayPal with 0% cut." 
+                  title: "Universal BYOPG (0% Cut)", 
+                  desc: "Accept Stripe, Midtrans (QRIS/VA), Xendit, Razorpay, PayPal, Bank Transfer, and Pay on Arrival with 100% direct payouts." 
+                },
+                { 
+                  icon: ShieldCheck, 
+                  title: "Digital Waivers & Proposals", 
+                  desc: "Built-in digital liability waivers with guest e-signatures, custom PDF itinerary proposals, and automated PDF invoices." 
                 },
                 { 
                   icon: MessageCircle, 
-                  title: "WhatsApp Automation", 
-                  desc: "Auto-deliver PDF tickets, driver pickup contact cards, and review links via WhatsApp." 
+                  title: "WhatsApp Dispatch & Tickets", 
+                  desc: "Auto-deliver PDF vouchers, assign drivers with pickup contact cards, and request Google reviews via WhatsApp." 
                 },
                 { 
                   icon: Mail, 
-                  title: "Email Notifications", 
-                  desc: "Automated booking confirmations, reminder flows, and branded receipts via Resend." 
+                  title: "AI Email Booking Extractor", 
+                  desc: "Paste confirmation emails from Viator, Klook, or GetYourGuide and let AI auto-populate your passenger manifest." 
                 },
                 { 
-                  icon: FileText, 
-                  title: "AI SEO Engine", 
-                  desc: "AI writes high-ranking travel blogs and destination guides to attract organic search traffic." 
+                  icon: Bot, 
+                  title: "24/7 AI Concierge & Planner", 
+                  desc: "Catalog-grounded AI answers guest questions 24/7 and builds custom multi-day trip itineraries from your real inventory." 
                 },
                 { 
-                  icon: BarChart, 
-                  title: "Operations Cockpit", 
-                  desc: "Track net revenue, passenger manifest, driver dispatches, and inventory cut-off locks." 
+                  icon: Layout, 
+                  title: "Luxury Storefront Builder", 
+                  desc: "High-converting mobile-first travel website with multi-currency switching, SEO blog generator, and custom domain SSL." 
                 },
               ].map((feature, i) => (
                 <div key={i} className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 hover:border-emerald-500/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
@@ -830,6 +904,40 @@ export default function SaaSMarketing() {
                   <p className="text-slate-600 text-xs leading-relaxed">{feature.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Done-For-You 24-Hour Migration High-Conversion Banner */}
+            <div className="mt-14 bg-slate-900 text-white rounded-3xl p-8 sm:p-10 border border-slate-800 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-8">
+              <div className="space-y-2 text-left max-w-2xl">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                  <Sparkles className="w-4 h-4" />
+                  <span>White-Glove Onboarding Offer</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                  Too busy running tours to set up a new website?
+                </h3>
+                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                  Send us your Viator, GetYourGuide, TripAdvisor, or Instagram link. Our team will import your top 5 tours & car rentals, configure your branding, and hand you a live 0%-commission booking site in <strong className="text-emerald-400">24 hours — 100% free</strong>.
+                </p>
+              </div>
+              <div className="shrink-0 w-full lg:w-auto">
+                <button
+                  onClick={() => {
+                    trackPostHogMarketingCTA({
+                      ctaName: 'Claim Free 24h Migration Banner',
+                      location: 'features_banner',
+                      destination: 'migration_modal',
+                      section: 'features'
+                    });
+                    setMigrationSuccess(false);
+                    setShowMigrationModal(true);
+                  }}
+                  className="w-full lg:w-auto px-7 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>Claim Free 24h Migration</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
           </div>
@@ -1472,6 +1580,176 @@ export default function SaaSMarketing() {
               <p className="text-center text-[10px] text-slate-400 mt-3 font-mono">
                 Instant access · We respect your privacy
               </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Free 24-Hour Done-For-You OTA Migration Modal */}
+      <AnimatePresence>
+        {showMigrationModal && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMigrationModal(false)}
+              className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"
+            />
+
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 p-8 overflow-hidden"
+            >
+              <button 
+                onClick={() => setShowMigrationModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {migrationSuccess ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900">
+                    Migration Request Received!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+                    Our onboarding team is importing your listings from <span className="font-mono font-bold text-slate-800">{migrationLead.sourceUrl}</span>. We will send your live preview link via WhatsApp & Email within 24 hours.
+                  </p>
+                  <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={() => {
+                        setShowMigrationModal(false);
+                        navigate('/signup');
+                      }}
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md cursor-pointer"
+                    >
+                      Or Create Self-Serve Account Now
+                    </button>
+                    <button
+                      onClick={() => setShowMigrationModal(false)}
+                      className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="relative text-left mb-6">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-700 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Free 24-Hour White-Glove Setup</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+                      We'll Migrate Your Tours for Free in 24 Hours
+                    </h3>
+                    <p className="text-slate-600 text-xs mt-1.5 leading-relaxed">
+                      Paste your Viator, GetYourGuide, TripAdvisor, Instagram, or current website link. We'll build your ready-to-book Tripbone storefront with 0% commission so you can test it risk-free.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleMigrationSubmit} className="space-y-3.5 max-h-[75vh] overflow-y-auto px-0.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Your Viator / GetYourGuide / Website / Instagram Link *
+                      </label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. viator.com/operator/... or instagram.com/yourtours"
+                        value={migrationLead.sourceUrl}
+                        onChange={(e) => setMigrationLead({ ...migrationLead, sourceUrl: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-lg text-xs transition-all outline-none text-slate-900 font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Your Name *</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. Made Wijaya"
+                          value={migrationLead.name}
+                          onChange={(e) => setMigrationLead({ ...migrationLead, name: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-lg text-xs transition-all outline-none text-slate-900 font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Company Name</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Bali Horizon Tours"
+                          value={migrationLead.companyName}
+                          onChange={(e) => setMigrationLead({ ...migrationLead, companyName: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-lg text-xs transition-all outline-none text-slate-900 font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Work Email *</label>
+                      <input 
+                        type="email" 
+                        required
+                        placeholder="you@yourcompany.com"
+                        value={migrationLead.email}
+                        onChange={(e) => setMigrationLead({ ...migrationLead, email: e.target.value })}
+                        className="w-full px-3.5 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-lg text-xs transition-all outline-none text-slate-900 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">WhatsApp Number (To Receive Your Live Preview Link) *</label>
+                      <CountryPhoneInput 
+                        value={demoPhoneData}
+                        onChange={setDemoPhoneData}
+                        theme="light"
+                        showWhatsappToggle={false}
+                        className="border-slate-200 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">What Do You Offer?</label>
+                      <select
+                        value={migrationLead.fleetType}
+                        onChange={(e) => setMigrationLead({ ...migrationLead, fleetType: e.target.value })}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none text-slate-900 font-medium"
+                      >
+                        <option value="both">Tours & Activities + Car/Driver Rentals</option>
+                        <option value="tours">Tours, Activities & Excursions Only</option>
+                        <option value="rentals">Car, Van, Scooter or Boat Rentals Only</option>
+                      </select>
+                    </div>
+
+                    <button 
+                      type="submit"
+                      disabled={submittingLead}
+                      className="w-full mt-4 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {submittingLead ? (
+                        <span>Submitting Request...</span>
+                      ) : (
+                        <>
+                          <span>Build My Free Preview Site in 24h</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                  
+                  <p className="text-center text-[10px] text-slate-400 mt-3 font-mono">
+                    100% Free Migration · Zero obligation · Keep 100% of direct bookings
+                  </p>
+                </>
+              )}
             </motion.div>
           </div>
         )}
